@@ -161,23 +161,24 @@ ptritCvt = Cvt $ map f [minBound .. maxBound] where
   f TI = (O,I)
   f TJ = (I,O)
 
+ptritOrnCvt :: Cvt
+ptritOrnCvt = Cvt $ map f [minBound .. maxBound] where
+  f TO = (O,O)
+  f TI = (O,I)
+  f TJ = (I,O)
+
 testPtritCurl = isCurlS2 ptritCvt ptritCvt ecurlS2
 
 select2s :: [a] -> [(a,a)]
 select2s [] = []
 select2s (x:xs) = map (x,) xs ++ select2s xs 
 
-circuit :: Char -> [[E]]
-circuit q = do
+circuit5 :: ([E]) -> (E -> [E]) -> (E -> E -> [E]) -> Char -> [[E]]
+circuit5 op0 op1 op2 q = do
   let
-    op0 = [AL,AH,BL,BH]
-    op1 x = [Not x]
-    op2 x y = [Xor x y, And x y, Or x y] -- ++ [Andn x y, Andn y x, Orn x y, Orn y x]
-    -- op3 = [Tern ?]
-
     -- construct new expressions using unary op
     op1s :: [E] -> [E]
-    op1s xs = map Not xs
+    op1s xs = concatMap op1 xs
 
     -- construct new expressions using binary op
     op2s :: [E] -> [E]
@@ -237,35 +238,174 @@ circuit q = do
       (x4,x5) <- select2s $ op1s [x3] ++ allOp2s (x2:x1:l0) [x3]
       return [x1,x2,x3,x4,x5]
 
-  filter (isFullSupport . last) $ case q of
+    ff = do
+      -- x0 = al, ah, bl, bh
+      (x1,x2) <- select2s $ op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      (x3,x4) <- select2s $ op1s [x1,x2] ++ allOp2s l0 [x1,x2] -- not x2, x1 `op` x2
+      x5 <- op1s [x3,x4] ++ allOp2s (x2:x1:l0) [x3,x4]
+      return [x1,x2,x3,x4,x5]
+
+    gg = do
+      -- x0 = al, ah, bl, bh
+      (x1,x2) <- select2s $ op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      x3 <- op1s [x1,x2] ++ allOp2s l0 [x1,x2] -- not x2, x1 `op` x2
+      (x4,x5) <- select2s $ op1s [x3] ++ allOp2s (x2:x1:l0) [x3]
+      return [x1,x2,x3,x4,x5]
+
+    hh = do
+      -- x0 = al, ah, bl, bh
+      x1 <- op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      (x2,x3) <- select2s $ op1s [x1] ++ allOp2s l0 [x1] -- not x1, x0 `op` x1
+      (x4,x5) <- select2s $ op1s [x2,x3] ++ allOp2s (x1:l0) [x2,x3]
+      return [x1,x2,x3,x4,x5]
+
+  case q of
     'a' -> aa
     'b' -> bb
     'c' -> cc
     'd' -> dd
     'e' -> ee
-    _ -> aa ++ bb ++ cc ++ dd ++ ee
+    'f' -> ff
+    'g' -> gg
+    'h' -> hh
+    _ -> aa ++ bb ++ cc ++ dd ++ ee ++ ff ++ gg ++ hh
 
-st = findCurlS2 ptritCvt ptritCvt . circuit
+circuit4 :: ([E]) -> (E -> [E]) -> (E -> E -> [E]) -> Char -> [[E]]
+circuit4 op0 op1 op2 q = do
+  let
+    -- construct new expressions using unary op
+    op1s :: [E] -> [E]
+    op1s xs = concatMap op1 xs
 
-tt = circuit
-ltt = length . tt
+    -- construct new expressions using binary op
+    op2s :: [E] -> [E]
+    -- there is no sense to apply a binary operation to `x`:
+    -- `Xor x x = 0`, `Andn x x = 0`, `Or x x = x`
+    -- `x` is used in `op2 x` and not used in `op2s xs`
+    -- so there are no redundancies in the new list
+    op2s = concatMap (uncurry op2) . select2s
+      -- \xs -> concatMap (op2 x) xs ++ op2s xs
 
-circuit' :: [[E]]
-circuit' = [l0,l1,l2,l3,l4,l5] where
+    -- construct new Es using binary op, `xs` and `ys` must not intersect
+    allOp2s xs ys = [r | x <- xs, y <- ys, r <- op2 x y]
+
+    l0 = op0
+    -- just one op applied to var/vars
+    appOp args vars = op1s vars ++ op2s vars ++ [r | arg <- args, var <- vars, r <- op2 arg var]
+
+  let
+    aa = do
+      -- x0 = al, ah, bl, bh
+      x1 <- op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      x2 <- op1s [x1] ++ allOp2s l0 [x1] -- not x1, x0 `op` x1
+      x3 <- op1s [x2] ++ allOp2s (x1:l0) [x2] -- not x2, x1 `op` x2
+      x4 <- op1s [x3] ++ allOp2s (x2:x1:l0) [x3]
+      return [x1,x2,x3,x4]
+
+    bb = do
+      -- x0 = al, ah, bl, bh
+      (x1,x2) <- select2s $ op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      x3 <- op1s [x1,x2] ++ allOp2s l0 [x1,x2] -- not x2, x1 `op` x2
+      x4 <- op1s [x3] ++ allOp2s (x2:x1:l0) [x3]
+      return [x1,x2,x3,x4]
+
+    cc = do
+      -- x0 = al, ah, bl, bh
+      x1 <- op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      (x2,x3) <- select2s $ op1s [x1] ++ allOp2s l0 [x1] -- not x1, x0 `op` x1
+      x4 <- op1s [x2,x3] ++ allOp2s (x1:l0) [x2,x3]
+      return [x1,x2,x3,x4]
+
+    dd = do
+      -- x0 = al, ah, bl, bh
+      x1 <- op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      x2 <- op1s [x1] ++ allOp2s l0 [x1] -- not x1, x0 `op` x1
+      (x3,x4) <- select2s $ op1s [x2] ++ allOp2s (x1:l0) [x2] -- not x2, x1 `op` x2
+      return [x1,x2,x3,x4]
+
+    ff = do
+      -- x0 = al, ah, bl, bh
+      (x1,x2) <- select2s $ op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      (x3,x4) <- select2s $ op1s [x1,x2] ++ allOp2s l0 [x1,x2] -- not x2, x1 `op` x2
+      return [x1,x2,x3,x4]
+
+  case q of
+    'a' -> aa
+    'b' -> bb
+    'c' -> cc
+    'd' -> dd
+    'f' -> ff
+    _ -> aa ++ bb ++ cc ++ dd ++ ff
+
+circuit3 :: ([E]) -> (E -> [E]) -> (E -> E -> [E]) -> Char -> [[E]]
+circuit3 op0 op1 op2 q = do
+  let
+    -- construct new expressions using unary op
+    op1s :: [E] -> [E]
+    op1s xs = concatMap op1 xs
+
+    -- construct new expressions using binary op
+    op2s :: [E] -> [E]
+    -- there is no sense to apply a binary operation to `x`:
+    -- `Xor x x = 0`, `Andn x x = 0`, `Or x x = x`
+    -- `x` is used in `op2 x` and not used in `op2s xs`
+    -- so there are no redundancies in the new list
+    op2s = concatMap (uncurry op2) . select2s
+      -- \xs -> concatMap (op2 x) xs ++ op2s xs
+
+    -- construct new Es using binary op, `xs` and `ys` must not intersect
+    allOp2s xs ys = [r | x <- xs, y <- ys, r <- op2 x y]
+
+    l0 = op0
+    -- just one op applied to var/vars
+    appOp args vars = op1s vars ++ op2s vars ++ [r | arg <- args, var <- vars, r <- op2 arg var]
+
+  let
+    aa = do
+      -- x0 = al, ah, bl, bh
+      x1 <- op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      x2 <- op1s [x1] ++ allOp2s l0 [x1] -- not x1, x0 `op` x1
+      x3 <- op1s [x2] ++ allOp2s (x1:l0) [x2] -- not x2, x1 `op` x2
+      return [x1,x2,x3]
+
+    bb = do
+      -- x0 = al, ah, bl, bh
+      (x1,x2) <- select2s $ op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      x3 <- op1s [x1,x2] ++ allOp2s l0 [x1,x2] -- not x2, x1 `op` x2
+      return [x1,x2,x3]
+
+    cc = do
+      -- x0 = al, ah, bl, bh
+      x1 <- op1s l0 ++ op2s l0 -- not x0, x0 `op` y0
+      (x2,x3) <- select2s $ op1s [x1] ++ allOp2s l0 [x1] -- not x1, x0 `op` x1
+      return [x1,x2,x3]
+
+  case q of
+    'a' -> aa
+    'b' -> bb
+    'c' -> cc
+    _ -> aa ++ bb ++ cc
+
+run345 cvt op1 op2 = map solve [circuit3, circuit4] where
+  solve f = findCurlS2 cvt cvt . f op0 op1 op2 $ ' '
   op0 = [AL,AH,BL,BH]
-  op1 = [Not]
-  op2 = [Xor, And, Or] -- [Xor, And, Or, Andn, Orn]
-  -- op3 = [Tern ?]
 
-  l0 = op0
-  l1 = (op1 <*> l0) ++ (op2 <*> l0 <*> l0)
-  l2 = (op1 <*> l1) ++ (op2 <*> l1 <*> l0) ++ (op2 <*> l0 <*> l1)
-  l3 = (op1 <*> l2) ++ (op2 <*> l2 <*> l0) ++ (op2 <*> l1 <*> l1) ++ (op2 <*> l0 <*> l2)
-  l4 = (op1 <*> l3) ++ (op2 <*> l3 <*> l0) ++ (op2 <*> l2 <*> l1) ++ (op2 <*> l1 <*> l2) ++ (op2 <*> l0 <*> l3)
-  l5 = (op1 <*> l4) ++ (op2 <*> l4 <*> l0) ++ (op2 <*> l3 <*> l1) ++ (op2 <*> l2 <*> l2) ++ (op2 <*> l1 <*> l3) ++ (op2 <*> l0 <*> l4)
-  ls = l0 ++ l1 ++ l2 ++ l3 ++ l4 -- ++ l5
+run345intel cvt = run345 cvt op1 op2 where
+  op1 x = [] -- [Not x]
+  op2 x y = [Xor x y, And x y, Or x y] ++ [Andn x y, Andn y x]
+
+run345arm cvt = run345 cvt op1 op2 where
+  op1 x = [] -- [Not x]
+  op2 x y = [Xor x y, And x y, Or x y] ++ [Orn x y, Orn y x]
 
 main :: IO ()
-main = mapM_ (putStrLn . show) (st ' ')
-
+main = do
+  putStrLn $ "ptritCvt " ++ show ptritCvt
+  flip mapM_ cvts $ \cvt -> do
+            putStrLn $ "arm " ++ show cvt
+            mapM_ (putStrLn . show) $ concat $ run345arm cvt
+  flip mapM_ cvts $ \cvt -> do
+            putStrLn $ "intel " ++ show cvt
+            mapM_ (putStrLn . show) $ concat $ run345intel cvt
+ 
 -- (Xor AH (And AL (Not BL)),Xor AL (And BH (Xor AH (And AL (Not BL)))))
