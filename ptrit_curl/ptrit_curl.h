@@ -1,29 +1,62 @@
 #pragma once
 
 #include <stdint.h>
-#include <immintrin.h>
 
 #define HASH_LENGTH_TRIT 243
 #define STATE_LENGTH (3 * HASH_LENGTH_TRIT)
 
-#if defined(__AVX512F__)
-#define PTRIT_AVX512
-typedef __m512i ptrit_s;
-#elif defined(__AVX2__)
-#define PTRIT_AVX2
-typedef __m256i ptrit_s;
-#elif defined(__AVX__)
-#define PTRIT_AVX
-typedef __m256d ptrit_s;
-#elif defined(__SSE2__)
-#define PTRIT_SSE2
-typedef __m128i ptrit_s;
-#elif defined(__SSE__)
-#define PTRIT_SSE
-typedef __m128d ptrit_s;
+#if defined(PTRIT_NEON)
+#include <arm_neon.h>
+typedef uint64x2_t ptrit_s;
+// -1 -> (0,0); 0 -> (1,0); +1 -> (1,1)
+#define PTRIT_CVT_00_10_11
+
 #else
-#define PTRIT_64
+#if defined(PTRIT_AVX512)
+#if !defined(__AVX512F__)
+#warning __AVX512F__ is not defined
+#endif
+#include <immintrin.h>
+typedef __m512i ptrit_s;
+
+#elif defined(PTRIT_AVX2)
+#if !defined(__AVX2__)
+#warning __AVX2__ is not defined
+#endif
+#include <immintrin.h>
+typedef __m256i ptrit_s;
+
+#elif defined(PTRIT_AVX)
+#if !defined(__AVX__)
+#warning __AVX__ is not defined
+#endif
+#include <immintrin.h>
+typedef __m256d ptrit_s;
+
+#elif defined(PTRIT_SSE2)
+#if !defined(__SSE2__)
+#warning __SSE2__ is not defined
+#endif
+#include <immintrin.h>
+typedef __m128i ptrit_s;
+
+#elif defined(PTRIT_SSE)
+#if !defined(__SSE__)
+#warning __SSE__ is not defined
+#endif
+#include <immintrin.h>
+typedef __m128d ptrit_s;
+
+#elif defined(PTRIT_64)
 typedef uint64_t ptrit_s;
+
+#else
+#error No ptrit platform selected.
+
+#endif
+// -1 -> (1,0); 0 -> (1,1); +1 -> (0,1)
+#define PTRIT_CVT_10_11_01
+
 #endif
 
 typedef struct {

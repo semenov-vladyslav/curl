@@ -116,7 +116,7 @@ void test_sbox()
 #endif
 }
 
-#define BENCH_SBOX_COUNT (3300000)
+#define BENCH_SBOX_COUNT (330000)
 
 void bench_ptrit_curl_sbox()
 {

@@ -3,6 +3,16 @@
 #include <string.h>
 #include <assert.h>
 
+#if defined(PTRIT_NEON)
+#define ORN(x,y) vornq_u64(y,x)
+#define XOR(x,y) veorq_u64(x,y)
+#define AND(x,y) vandq_u64(x,y)
+#define OR(x,y) vorrq_u64(x,y)
+#define NOT(x) ORN(x,XOR(x,x))
+
+#define XORORN(x,y,z) XOR(x,ORN(y,z))
+
+#else
 #if defined(PTRIT_AVX512F)
 /*
   x y z x^(~y&z)  x^(y&z)
@@ -26,11 +36,12 @@
 #define XOR(x,y) _mm256_xor_si256(x,y)
 #define OR(x,y) _mm256_or_si256(x,y)
 #define NOT(x,y) _mm256_andnot_si256(x,_mm256_set_epi64x(-1ll, -1ll, -1ll, -1ll))
+
 #elif defined(PTRIT_AVX)
 #define ANDN(x,y) _mm256_andnot_pd(x,y)
 #define AND(x,y) _mm256_and_pd(x,y)
 #define XOR(x,y) _mm256_xor_pd(x,y)
-#define OR(x,y) _mm256_or_pd(x,y)
+
 #elif defined(PTRIT_SSE2)
 #if defined(_MSC_VER) && _MSC_VER < 1900 /*&& !defined(_WIN64)*/
 static __inline __m128i _mm_set_epi64x(__int64 _I1, __int64 _I0)
@@ -46,11 +57,12 @@ static __inline __m128i _mm_set_epi64x(__int64 _I1, __int64 _I0)
 #define XOR(x,y) _mm_xor_si128(x,y)
 #define OR(x,y) _mm_or_si128(x,y)
 #define NOT(x,y) _mm_andnot_si128(x,_mm_set_epi64x(-1ll, -1ll))
+
 #elif defined(PTRIT_SSE)
 #define ANDN(x,y) _mm_andnot_pd(x,y)
 #define AND(x,y) _mm_and_pd(x,y)
 #define XOR(x,y) _mm_xor_pd(x,y)
-#define OR(x,y) _mm_or_pd(x,y)
+
 #else
 #define ANDN(x,y) ((~(x)) & (y))
 #define AND(x,y) ((x) & (y))
@@ -62,12 +74,22 @@ static __inline __m128i _mm_set_epi64x(__int64 _I1, __int64 _I0)
 #define XORANDN(x,y,z) XOR(x,ANDN(y,z))
 #define XORAND(x,y,z) XOR(x,AND(y,z))
 #endif
+#endif
 
-static __forceinline void curl_s2_andn(ptrit_t const *a, ptrit_t const *b, ptrit_t *c)
+#define FORCE_INLINE
+static FORCE_INLINE void curl_s2_andn(ptrit_t const *a, ptrit_t const *b, ptrit_t *c)
 {
-  // (Xor AH (And AL (Not BL)),Xor AL (And BH (Xor AH (And AL (Not BL)))))
+#if defined(PTRIT_CVT_00_10_11)
+  // (Xor AH (Orn BL AL),Xor AL (Orn BH (Xor AH (Orn BL AL))))
+  c->low = XORORN(a->high, b->low, a->low);
+  c->high = XORORN(a->low, b->high, c->low);
+#elif defined(PTRIT_CVT_10_11_01)
+  // (Xor AH (Andn BL AL),Xor AL (And BH (Xor AH (Andn BL AL))))
   c->low = XORANDN(a->high, b->low, a->low);
   c->high = XORAND(a->low, b->high, c->low);
+#else
+#error No known ptrit cvt selected.
+#endif
 }
 
 void ptrit_curl_sbox(ptrit_t *c, ptrit_t const *s)
