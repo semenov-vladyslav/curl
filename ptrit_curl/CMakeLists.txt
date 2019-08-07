@@ -20,4 +20,4 @@ elseif(${PTRIT_PLATFORM} STREQUAL PTRIT_SSE2)
 endif()
 endif((${CMAKE_C_COMPILER_ID} STREQUAL CLANG) OR (${CMAKE_C_COMPILER_ID} STREQUAL GNU))
 
-add_executable(ptrit_curl ptrit_curl.c test.c)
+add_executable(pcurl ptrit_curl.c test.c)
