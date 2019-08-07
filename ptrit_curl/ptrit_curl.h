@@ -105,22 +105,21 @@ void pcurl_sbox(ptrit_t *c, ptrit_t const *s);
 typedef struct
 {
 #if defined(PCURL_SBOX_MEMSHORT)
-  ptrit_t a[(STATE_SIZE + 1) / 2];
-  ptrit_t b[(STATE_SIZE + 1) / 2];
-  ptrit_t c[(STATE_SIZE + 1) / 2];
+  ptrit_t s[3 * (STATE_SIZE + 1) / 2];
 #else
-  ptrit_t a[STATE_SIZE];
-  ptrit_t c[STATE_SIZE];
+  ptrit_t s[2 * STATE_SIZE];
 #endif
   size_t round_count;
 } pcurl_t;
 
 void pcurl_init(pcurl_t *ctx, size_t round_count);
-void pcurl_absorb(pcurl_t *ctx, ptrit_t const* ptrits, size_t length);
-void pcurl_squeeze(pcurl_t *ctx, ptrit_t* ptrits, size_t length);
-void pcurl_get_hash(pcurl_t *ctx, ptrit_t* hash);
+void pcurl_absorb(pcurl_t *ctx, ptrit_t const *ptrits, size_t length);
+void pcurl_squeeze(pcurl_t *ctx, ptrit_t *ptrits, size_t length);
 void pcurl_transform(pcurl_t *ctx);
 void pcurl_reset(pcurl_t *ctx);
+
+void pcurl_get_hash(pcurl_t *ctx, ptrit_t* hash);
+void pcurl_hash_data(pcurl_t *ctx, ptrit_t const *data, size_t size, ptrit_t* hash);
 
 
 #if defined(PTRIT_64)
