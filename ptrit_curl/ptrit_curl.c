@@ -160,7 +160,11 @@ void trits_tep_to_te1(
   }
 }
 
-#define FORCE_INLINE
+#if defined(_MSC_VER)
+#define FORCE_INLINE __force_inline
+#else
+#define FORCE_INLINE inline
+#endif
 static FORCE_INLINE 
 void pcurl_s2(ptrit_t const *a, ptrit_t const *b, ptrit_t *c)
 {
