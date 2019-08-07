@@ -6,4 +6,18 @@ option(PTRIT_CVT "PTRIT_CVT_ANDN PTRIT_CVT_ORN" PTRIT_CVT_ANDN)
 
 add_definitions("-D${PTRIT_PLATFORM}")
 add_definitions("-D${PTRIT_CVT}")
+
+if((${CMAKE_C_COMPILER_ID} STREQUAL Clang) OR (${CMAKE_C_COMPILER_ID} STREQUAL GNU))
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O2")
+if(${PTRIT_PLATFORM} STREQUAL PTRIT_NEON)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=armv7 -mfpu=neon")
+elseif(${PTRIT_PLATFORM} STREQUAL PTRIT_AVX512)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx512f -fno-asynchronous-unwind-tables")
+elseif(${PTRIT_PLATFORM} STREQUAL PTRIT_AVX2)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx2")
+elseif(${PTRIT_PLATFORM} STREQUAL PTRIT_SSE2)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse2")
+endif()
+endif((${CMAKE_C_COMPILER_ID} STREQUAL CLANG) OR (${CMAKE_C_COMPILER_ID} STREQUAL GNU))
+
 add_executable(ptrit_curl ptrit_curl.c test.c)
