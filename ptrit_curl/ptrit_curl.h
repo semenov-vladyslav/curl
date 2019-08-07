@@ -118,6 +118,7 @@ typedef struct
 void pcurl_init(pcurl_t *ctx, size_t round_count);
 void pcurl_absorb(pcurl_t *ctx, ptrit_t const* ptrits, size_t length);
 void pcurl_squeeze(pcurl_t *ctx, ptrit_t* ptrits, size_t length);
+void pcurl_get_hash(pcurl_t *ctx, ptrit_t* hash);
 void pcurl_transform(pcurl_t *ctx);
 void pcurl_reset(pcurl_t *ctx);
 

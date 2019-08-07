@@ -344,6 +344,11 @@ void pcurl_squeeze(pcurl_t *ctx, ptrit_t* ptrits, size_t length)
     length = 0;
   }
 }
+void pcurl_get_hash(pcurl_t *ctx, ptrit_t* hash)
+{
+  memcpy(ptrits, ctx->a, RATE * sizeof(ptrit_t));
+  pcurl_reset(ctx);
+}
 
 #if defined(PCURL_DEBUG)
 #include <stdio.h>
