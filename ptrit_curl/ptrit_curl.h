@@ -104,13 +104,13 @@ void pcurl_sbox(ptrit_t *c, ptrit_t const *s);
 
 typedef struct
 {
-#if !defined(PCURL_MEM_SHORT)
-  ptrit_t a[STATE_SIZE];
-  ptrit_t c[STATE_SIZE];
-#else
+#if defined(PCURL_SBOX_MEMSHORT)
   ptrit_t a[(STATE_SIZE + 1) / 2];
   ptrit_t b[(STATE_SIZE + 1) / 2];
   ptrit_t c[(STATE_SIZE + 1) / 2];
+#else
+  ptrit_t a[STATE_SIZE];
+  ptrit_t c[STATE_SIZE];
 #endif
   size_t round_count;
 } pcurl_t;

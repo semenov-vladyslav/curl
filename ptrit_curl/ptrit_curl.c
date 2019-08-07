@@ -366,23 +366,7 @@ static void ptrits_rprint(size_t n, ptrit_t const *p)
 }
 #endif
 
-#if !defined(PCURL_MEM_SHORT)
-void pcurl_transform(pcurl_t *ctx)
-{
-  size_t round;
-
-  ptrits_print2(STATE_SIZE, ctx->a);
-  for(round = 0; round < ctx->round_count; ++round)
-  {
-    pcurl_sbox(ctx->c, ctx->a);
-    memcpy(ctx->a, ctx->c, sizeof(ctx->a));
-#if defined(PCURL_DEBUG)
-    printf("---\n");
-    ptrits_print2(STATE_SIZE, ctx->a);
-#endif
-  }
-}
-#else
+#if defined(PCURL_SBOX_MEMSHORT)
 void pcurl_transform(pcurl_t *ctx)
 {
   size_t round;
@@ -414,38 +398,54 @@ void pcurl_transform(pcurl_t *ctx)
 #endif
   }
 }
+#else
+void pcurl_transform(pcurl_t *ctx)
+{
+  size_t round;
+
+  ptrits_print2(STATE_SIZE, ctx->a);
+  for(round = 0; round < ctx->round_count; ++round)
+  {
+    pcurl_sbox(ctx->c, ctx->a);
+    memcpy(ctx->a, ctx->c, sizeof(ctx->a));
+#if defined(PCURL_DEBUG)
+    printf("---\n");
+    ptrits_print2(STATE_SIZE, ctx->a);
+#endif
+  }
+}
 #endif
 void pcurl_reset(pcurl_t *ctx)
 {
   //TODO: memset_safe
 #if defined(PTRIT_CVT_ANDN)
-#if !defined(PCURL_MEM_SHORT)
+#if defined(PCURL_SBOX_MEMSHORT)
   memset(ctx->a, -1, sizeof(ctx->a));
+  memset(ctx->b, -1, sizeof(ctx->b));
   memset(ctx->c, -1, sizeof(ctx->c));
 #else
   memset(ctx->a, -1, sizeof(ctx->a));
-  memset(ctx->b, -1, sizeof(ctx->b));
   memset(ctx->c, -1, sizeof(ctx->c));
 #endif
 #endif
 
 #if defined(PTRIT_CVT_ORN)
   size_t i;
-#if !defined(PCURL_MEM_SHORT)
-  for(i = 0; i < STATE_SIZE; ++i)
-  {
-    memset(&ctx->a[i].low, 0, sizeof(ptrit_s));
-    memset(&ctx->a[i].high, -1, sizeof(ptrit_s));
-    memset(&ctx->c[i].low, 0, sizeof(ptrit_s));
-    memset(&ctx->c[i].high, -1, sizeof(ptrit_s));
-  }
-#else
+#if defined(PCURL_SBOX_MEMSHORT)
   for(i = 0; i < (STATE_SIZE + 1) / 2; ++i)
   {
     memset(&ctx->a[i].low, 0, sizeof(ptrit_s));
     memset(&ctx->a[i].high, -1, sizeof(ptrit_s));
     memset(&ctx->b[i].low, 0, sizeof(ptrit_s));
     memset(&ctx->b[i].high, -1, sizeof(ptrit_s));
+    memset(&ctx->c[i].low, 0, sizeof(ptrit_s));
+    memset(&ctx->c[i].high, -1, sizeof(ptrit_s));
+  }
+#else
+  for(i = 0; i < STATE_SIZE; ++i)
+  {
+    memset(&ctx->a[i].low, 0, sizeof(ptrit_s));
+    memset(&ctx->a[i].high, -1, sizeof(ptrit_s));
     memset(&ctx->c[i].low, 0, sizeof(ptrit_s));
     memset(&ctx->c[i].high, -1, sizeof(ptrit_s));
   }
