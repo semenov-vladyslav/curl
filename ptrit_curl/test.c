@@ -30,6 +30,25 @@ ptrit_t rng_ptrit(uint64_t *rnd)
   return t;
 }
 
+#define DATA                                                                                                     \
+  -1, 1, -1, -1, 1, -1, 1, 1, 0, -1, 0, 0, 1, 0, 1, 0, 0, 0, -1, -1, -1, -1, 0, 0, -1, 0, 0, 1, 0, 0, -1, 0, 0, 1, -1, \
+  -1, 1, -1, 1, -1, -1, 1, 0, 1, 0, 0, 0, 1, -1, 0, -1, 1, -1, -1, 0, 0, 0, -1, 0, 0, 1, -1, -1, 0, 0, 0, -1, 0,   \
+  0, 0, -1, -1, 0, 1, 1, -1, 1, 1, 1, 1, -1, 0, -1, 0, -1, 0, -1, 0, -1, -1, -1, -1, 0, 1, -1, 0, -1, -1, 0, 0, 0, \
+  0, 0, 1, 1, 0, 1, -1, 0, -1, -1, -1, 0, 0, 1, 0, -1, -1, -1, -1, 0, -1, -1, -1, 0, -1, 0, 0, -1, 1, 1, -1, -1,   \
+  1, 1, -1, 1, -1, 1, 0, -1, 1, -1, -1, -1, 0, 1, 1, 0, -1, 0, 1, 0, 0, 1, 1, 0, 0, -1, -1, 1, 0, 0, 0, 0, -1, 1,  \
+  0, 1, 0, 0, 0, 1, -1, 1, -1, 0, 0, -1, 1, 1, -1, 0, 0, 1, -1, 0, 1, 0, -1, 1, -1, 0, 0, 1, -1, -1, -1, 0, 1, 0,  \
+  -1, -1, 0, 1, 0, 0, 0, 1, -1, 1, -1, 0, 1, -1, -1, 0, 0, 0, -1, -1, 1, 1, 0, 1, -1, 0, 0, 0, -1, 0, -1, 0, -1,   \
+  -1, -1, -1, 0, 1, -1, -1, 0, 1
+#define PCURL_27_HASH                                                                                                  \
+  -1, -1, -1, -1, 0, 0, 1, 1, -1, 1, 1, 0, -1, 1, 0, 1, 0, 0, 1, 0, -1, 1, 1, -1, -1, -1, 0, 1, 0, 1, -1, -1, 1, -1,   \
+  -1, -1, -1, 1, 1, 1, 1, -1, 1, 1, 1, -1, 0, 1, -1, 1, 0, 0, 1, -1, 1, -1, 1, 0, 1, 0, 0, 1, -1, 1, 1, -1, 0, 0,  \
+  1, 1, -1, 0, 1, 0, -1, 0, 0, 1, -1, -1, -1, 0, 0, -1, 1, 0, 0, -1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, -1, 1, 0,    \
+  -1, 1, 0, 1, 1, 0, 0, -1, 1, -1, 1, 0, -1, 0, 1, 0, 1, -1, 1, -1, 0, 1, 0, 1, 1, 1, -1, 0, 1, -1, 0, 0, 0, 1, 0, \
+  -1, 0, -1, 0, -1, -1, 1, -1, 1, 1, 0, -1, 1, 0, -1, 1, 0, 1, -1, 0, 0, 0, -1, 0, 0, -1, 0, -1, -1, 0, 0, -1, -1, \
+  1, 1, -1, -1, -1, 0, -1, 0, -1, -1, 1, -1, -1, -1, -1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, -1, 1, 0, 1, -1, -1, -1,    \
+  -1, 1, 0, 0, -1, 1, 1, 1, -1, 1, 0, -1, 0, 1, -1, 1, 1, 1, 0, 1, 1, 0, -1, 0, 1, 1, -1, 0, -1, 0, 1, 0, 0, 1, 1, \
+  1, -1, 0, 1, -1, 0
+
 #if 0
 void test_curl_s2_trit()
 {
@@ -43,7 +62,7 @@ void test_curl_s2_trit()
   c = 0;
 }
 
-void test_curl_s2()
+void test_pcurl_s2()
 {
   int r;
   ptrit_t a, b, c;
@@ -53,29 +72,8 @@ void test_curl_s2()
     a.high = (r & (1 << 1)) ? -1 : 0;
     b.low = (r & (1 << 2)) ? -1 : 0;
     b.high = (r & (1 << 3)) ? -1 : 0;
-    c = curl_s2(a, b);
-    if((a.low || a.high) && (b.low || b.high) && (c.low || c.high))
-    printf("a=(%d,%d) b=(%d,%d) c=(%d,%d)\n"
-      , (int)(a.low ? 1 : 0), (int)(a.high ? 1 : 0)
-      , (int)(b.low ? 1 : 0), (int)(b.high ? 1 : 0)
-      , (int)(c.low ? 1 : 0), (int)(c.high ? 1 : 0)
-    );
-  }
-  r = 0;
-}
-
-void test_curl_s2_andn()
-{
-  int r;
-  ptrit_t a, b, c;
-  for(r = 0; r < 16; ++r)
-  {
-    a.low = (r & (1 << 0)) ? -1 : 0;
-    a.high = (r & (1 << 1)) ? -1 : 0;
-    b.low = (r & (1 << 2)) ? -1 : 0;
-    b.high = (r & (1 << 3)) ? -1 : 0;
-    c = curl_s2_andn(a, b);
-    if((a.low || a.high) && (b.low || b.high) && (c.low || c.high))
+    pcurl_s2(&a, &b, &c);
+    //if((a.low || a.high) && (b.low || b.high) && (c.low || c.high))
     printf("a=(%d,%d) b=(%d,%d) c=(%d,%d)\n"
       , (int)(a.low ? 1 : 0), (int)(a.high ? 1 : 0)
       , (int)(b.low ? 1 : 0), (int)(b.high ? 1 : 0)
@@ -85,96 +83,128 @@ void test_curl_s2_andn()
   r = 0;
 }
 #endif
+
+void test_curl()
+{
+  trit_te1_t const data[] = { DATA };
+  trit_te1_t const hash[] = { PCURL_27_HASH };
+  ptrit_t pdata[sizeof(data)];
+  ptrit_t ph2[sizeof(hash)];
+  trit_te1_t h2[sizeof(hash)];
+
+  pcurl_t curl;
+  pcurl_init(&curl, 27);
+  memset(pdata, 0, sizeof(pdata));
+  trits_te1_to_tep(pdata, 0, data, sizeof(data));
+  trits_te1_to_tep(pdata, PTRIT_SIZE - 4, data, sizeof(data));
+  pcurl_absorb(&curl, pdata, sizeof(data));
+  //pcurl_squeeze(&curl, ph2, sizeof(hash));
+  memcpy(ph2, curl.a, RATE * sizeof(ptrit_t));
+
+  {
+    int r = 1;
+    trits_tep_to_te1(h2, ph2, 0, sizeof(hash));
+    r = r && (0 == memcmp(hash, h2, sizeof(hash)));
+    assert(r);
+    trits_tep_to_te1(h2, ph2, PTRIT_SIZE - 4, sizeof(hash));
+    r = r && (0 == memcmp(hash, h2, sizeof(hash)));
+    assert(r);
+
+    printf("test_curl %s\n", r ? "ok" : "failed");
+  }
+}
 
 void test_sbox()
 {
   int r = 1;
   uint64_t rnd = 0x88534582;
 
-  ptrit_t s[STATE_LENGTH]
-    , c[STATE_LENGTH]
-    , c2[STATE_LENGTH]
+  ptrit_t s[STATE_SIZE]
+    , c[STATE_SIZE]
+    , c2[STATE_SIZE]
     ;
   size_t i;
-  for(i = 0; i < STATE_LENGTH; ++i)
+  for(i = 0; i < STATE_SIZE; ++i)
   {
     s[i] = rng_ptrit(&rnd);
   }
 
-  ptrit_curl_sbox(c, s);
+  pcurl_sbox(c, s);
 
 #if defined(PTRIT_64)
-  ptrit_curl_sbox_64(c2, s);
+  pcurl_sbox_64(c2, s);
   r = memcmp(c, c2, sizeof(c));
-  printf("ptrit_curl_sbox_64 test %s\n", r ? "failed" : "ok");
+  printf("pcurl_sbox_64 test %s\n", r ? "failed" : "ok");
 #endif
 
 #if !defined(PTRIT_AVX512)
-  ptrit_curl_sbox_dcurl(c2, s);
+  pcurl_sbox_dcurl(c2, s);
   r = memcmp(c, c2, sizeof(c));
-  printf("ptrit_curl_sbox_dcurl test %s\n", r ? "failed" : "ok");
+  printf("pcurl_sbox_dcurl test %s\n", r ? "failed" : "ok");
 #endif
 }
 
 #define BENCH_SBOX_COUNT (330000)
 
-void bench_ptrit_curl_sbox()
+void bench_pcurl_sbox()
 {
-  ptrit_t s[STATE_LENGTH]
-    , c[STATE_LENGTH]
+  ptrit_t s[STATE_SIZE]
+    , c[STATE_SIZE]
     ;
   size_t i = BENCH_SBOX_COUNT / (sizeof(ptrit_s) / sizeof(uint64_t));
   clock_t runtime = clock();
   for(; i--;)
-    ptrit_curl_sbox(c, s);
+    pcurl_sbox(c, s);
   runtime = clock() - runtime;
-  printf("ptrit_curl_sbox time = %d\n", (int)runtime);
+  printf("pcurl_sbox time = %d\n", (int)runtime);
 }
 
 #if defined(PTRIT_64)
-void bench_ptrit_curl_sbox_64()
+void bench_pcurl_sbox_64()
 {
-  ptrit_t s[STATE_LENGTH]
-    , c[STATE_LENGTH]
+  ptrit_t s[STATE_SIZE]
+    , c[STATE_SIZE]
     ;
   size_t i = BENCH_SBOX_COUNT / (sizeof(ptrit_s) / sizeof(uint64_t));
   clock_t runtime = clock();
   for(; i--;)
-    ptrit_curl_sbox_64(c, s);
+    pcurl_sbox_64(c, s);
   runtime = clock() - runtime;
-  printf("ptrit_curl_sbox_64   time = %d\n", (int)runtime);
+  printf("pcurl_sbox_64   time = %d\n", (int)runtime);
 }
 #endif
 
 #if !defined(PTRIT_AVX512)
-void bench_ptrit_curl_sbox_dcurl()
+void bench_pcurl_sbox_dcurl()
 {
-  ptrit_t s[STATE_LENGTH]
-    , c[STATE_LENGTH]
+  ptrit_t s[STATE_SIZE]
+    , c[STATE_SIZE]
     ;
   size_t i = BENCH_SBOX_COUNT / (sizeof(ptrit_s) / sizeof(uint64_t));
   clock_t runtime = clock();
   for(; i--;)
-    ptrit_curl_sbox_dcurl(c, s);
+    pcurl_sbox_dcurl(c, s);
   runtime = clock() - runtime;
-  printf("ptrit_curl_sbox_dcurl time = %d\n", (int)runtime);
+  printf("pcurl_sbox_dcurl time = %d\n", (int)runtime);
 }
 #endif
 
 void bench_sbox()
 {
-  bench_ptrit_curl_sbox();
+  bench_pcurl_sbox();
 #if defined(PTRIT_64)
-  bench_ptrit_curl_sbox_64();
+  bench_pcurl_sbox_64();
 #endif
 #if !defined(PTRIT_AVX512)
-  bench_ptrit_curl_sbox_dcurl();
+  bench_pcurl_sbox_dcurl();
 #endif
 }
 
 int main()
 {
-  test_sbox();
+  //test_pcurl_s2();
+  test_curl();
+  //test_sbox();
   bench_sbox();
   bench_sbox();
   bench_sbox();

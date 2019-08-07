@@ -35,7 +35,7 @@
 #define AND(x,y) _mm256_and_si256(x,y)
 #define XOR(x,y) _mm256_xor_si256(x,y)
 #define OR(x,y) _mm256_or_si256(x,y)
-#define NOT(x,y) _mm256_andnot_si256(x,_mm256_set_epi64x(-1ll, -1ll, -1ll, -1ll))
+#define NOT(x) _mm256_andnot_si256(x,_mm256_set_epi64x(-1ll, -1ll, -1ll, -1ll))
 
 #elif defined(PTRIT_AVX)
 #define ANDN(x,y) _mm256_andnot_pd(x,y)
@@ -56,7 +56,7 @@ static __inline __m128i _mm_set_epi64x(__int64 _I1, __int64 _I0)
 #define AND(x,y) _mm_and_si128(x,y)
 #define XOR(x,y) _mm_xor_si128(x,y)
 #define OR(x,y) _mm_or_si128(x,y)
-#define NOT(x,y) _mm_andnot_si128(x,_mm_set_epi64x(-1ll, -1ll))
+#define NOT(x) _mm_andnot_si128(x,_mm_set_epi64x(-1ll, -1ll))
 
 #elif defined(PTRIT_SSE)
 #define ANDN(x,y) _mm_andnot_pd(x,y)
@@ -64,55 +64,393 @@ static __inline __m128i _mm_set_epi64x(__int64 _I1, __int64 _I0)
 #define XOR(x,y) _mm_xor_pd(x,y)
 
 #else
-#define ANDN(x,y) ((~(x)) & (y))
 #define AND(x,y) ((x) & (y))
 #define XOR(x,y) ((x) ^ (y))
 #define OR(x,y) ((x) | (y))
 #define NOT(x) (~(x))
+#define ANDN(x,y) AND(NOT(x),(y))
+#define ORN(x,y) OR(NOT(x),(y))
 #endif
 
 #define XORANDN(x,y,z) XOR(x,ANDN(y,z))
 #define XORAND(x,y,z) XOR(x,AND(y,z))
+#define XORORN(x,y,z) XOR(x,ORN(y,z))
 #endif
 #endif
 
-#define FORCE_INLINE
-static FORCE_INLINE void curl_s2_andn(ptrit_t const *a, ptrit_t const *b, ptrit_t *c)
+
+static uint64_t const cvt_te1_to_tep[4][2] =
 {
-#if defined(PTRIT_CVT_00_10_11)
+#if defined(PTRIT_CVT_ANDN)
+  // -1 -> (1,0); 0 -> (1,1); +1 -> (0,1)
+  { 1, 1 }, // 0
+  { 0, 1 }, // +1
+  { 0, 0 }, // NaT
+  { 1, 0 }, // -1
+#endif
+#if defined(PTRIT_CVT_ORN)
+// -1 -> (0,0); 0 -> (0,1); +1 -> (1,1)
+  { 0, 1 }, // 0
+  { 1, 1 }, // +1
+  { 0, 1 }, // NaT
+  { 0, 0 }, // -1
+#endif
+};
+
+static trit_te1_t const cvt_tep_to_te1[2][2] = 
+{
+#if defined(PTRIT_CVT_ANDN)
+  // -1 -> (1,0); 0 -> (1,1); +1 -> (0,1)
+  { 2, +1 },
+  { -1, 0 },
+#endif
+#if defined(PTRIT_CVT_ORN)
+// -1 -> (0,0); 0 -> (0,1); +1 -> (1,1)
+  { -1, 0 },
+  { 2, +1 },
+#endif
+};
+
+void trits_te1_to_tep(
+  ptrit_t *dst, size_t idx,
+  trit_te1_t const *src,
+  size_t n)
+{
+#if PTRIT_SIZE != 64
+  size_t w = idx / 64;
+  idx %= 64;
+#endif
+
+  for(; n--;)
+  {
+    size_t s = (size_t)(3 & *src++);
+#if PTRIT_SIZE == 64
+    dst->low |= cvt_te1_to_tep[s][0] << idx;
+    dst->high |= cvt_te1_to_tep[s][1] << idx;
+#else
+    ((uint64_t *)(&dst->low))[w] |= cvt_te1_to_tep[s][0] << idx;
+    ((uint64_t *)(&dst->high))[w] |= cvt_te1_to_tep[s][1] << idx;
+#endif
+    dst++;
+  }
+}
+
+void trits_tep_to_te1(
+  trit_te1_t *dst,
+  ptrit_t const *src, size_t idx,
+  size_t n)
+{
+#if PTRIT_SIZE != 64
+  size_t w = idx / 64;
+  idx %= 64;
+#endif
+
+  for(; n--;)
+  {
+    size_t low, high;
+#if PTRIT_SIZE == 64
+    low = 1 & (src->low >> idx);
+    high = 1 & (src->high >> idx);
+#else
+    low = 1 & ((((uint64_t const *)(&src->low))[w]) >> idx);
+    high = 1 & ((((uint64_t const *)(&src->high))[w]) >> idx);
+#endif
+    *dst++ = cvt_tep_to_te1[low][high];
+    src++;
+  }
+}
+
+#define FORCE_INLINE
+static FORCE_INLINE 
+void pcurl_s2(ptrit_t const *a, ptrit_t const *b, ptrit_t *c)
+{
+#if defined(PTRIT_CVT_ORN)
   // (Xor AH (Orn BL AL),Xor AL (Orn BH (Xor AH (Orn BL AL))))
   c->low = XORORN(a->high, b->low, a->low);
   c->high = XORORN(a->low, b->high, c->low);
-#elif defined(PTRIT_CVT_10_11_01)
+#elif defined(PTRIT_CVT_ANDN)
   // (Xor AH (Andn BL AL),Xor AL (And BH (Xor AH (Andn BL AL))))
   c->low = XORANDN(a->high, b->low, a->low);
   c->high = XORAND(a->low, b->high, c->low);
 #else
-#error No known ptrit cvt selected.
+#error Invalid ptrit cvt.
 #endif
 }
 
-void ptrit_curl_sbox(ptrit_t *c, ptrit_t const *s)
+void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
 {
   size_t i;
 
   // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
   ptrit_t const *x = s + 0, *y = s + 364;
-  curl_s2_andn(x, y, c++);
+  pcurl_s2(x, y, c++);
   x = s + 728;
 
   // 728 = 8*91
-  for(i = 0; i < STATE_LENGTH / 8; ++i)
+  for(i = 0; i < STATE_SIZE / 8; ++i)
   {
-    curl_s2_andn(y--, x, c++);
-    curl_s2_andn(x--, y, c++);
-    curl_s2_andn(y--, x, c++);
-    curl_s2_andn(x--, y, c++);
-    curl_s2_andn(y--, x, c++);
-    curl_s2_andn(x--, y, c++);
-    curl_s2_andn(y--, x, c++);
-    curl_s2_andn(x--, y, c++);
+    pcurl_s2(y--, x, c++);
+    pcurl_s2(x--, y, c++);
+    pcurl_s2(y--, x, c++);
+    pcurl_s2(x--, y, c++);
+    pcurl_s2(y--, x, c++);
+    pcurl_s2(x--, y, c++);
+    pcurl_s2(y--, x, c++);
+    pcurl_s2(x--, y, c++);
   }
+}
+
+// 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
+// a : [  0..  364]-- => --[0,728..365]++ ->   xxxxxxxxxxxx   -> ++[0    ..364]
+// b : [365..728,0]-- ->   xxxxxxxxxxxx   => --[364  ..  0]++ => ++[365..728,0]
+// c : xxxxxxxxxxxx   => ++[0    ..364]-- => --[0,728..365]++ ->   xxxxxxxxxxxx
+// c : xxxxxxxxxxxx   => --[364  ..  0]++ => ++[365..728,0]-- ->   xxxxxxxxxxxx
+void pcurl_sbox2_0(ptrit_t *a, ptrit_t *b, ptrit_t *c)
+{
+  size_t i;
+
+  a = a + 364;
+  b = b + 364;
+  c = c + 0;
+  ptrit_t *aa = a;
+  ptrit_t *c0 = c;
+
+  pcurl_s2(b--, a, c++);
+  // 728 = 8*91
+  for(i = 0; i < STATE_SIZE / 8; ++i)
+  {
+    pcurl_s2(a--, b, c++);
+    pcurl_s2(b--, a, c++);
+    pcurl_s2(a--, b, c++);
+    pcurl_s2(b--, a, c++);
+  }
+
+  for(i = 0; i < STATE_SIZE / 8; ++i)
+  {
+    pcurl_s2(a--, b, aa--);
+    pcurl_s2(b--, a, aa--);
+    pcurl_s2(a--, b, aa--);
+    pcurl_s2(b--, a, aa--);
+  }
+  *aa = *c0;
+}
+void pcurl_sbox2_1(ptrit_t *a, ptrit_t *b, ptrit_t *c)
+{
+  size_t i;
+
+  c = c + 364;
+  a = a + 0;
+  b = b + 364;
+  ptrit_t *cc = c;
+  ptrit_t *b0 = b;
+
+  pcurl_s2(a++, c, b--);
+  // 728 = 8*91
+  for(i = 0; i < STATE_SIZE / 8; ++i)
+  {
+    pcurl_s2(c--, a, b--);
+    pcurl_s2(a++, c, b--);
+    pcurl_s2(c--, a, b--);
+    pcurl_s2(a++, c, b--);
+  }
+
+  for(i = 0; i < STATE_SIZE / 8; ++i)
+  {
+    pcurl_s2(c--, a, cc--);
+    pcurl_s2(a++, c, cc--);
+    pcurl_s2(c--, a, cc--);
+    pcurl_s2(a++, c, cc--);
+  }
+  *cc = *b0;
+}
+void pcurl_sbox2_2(ptrit_t *a, ptrit_t *b, ptrit_t *c)
+{
+  size_t i;
+
+  b = b + 0;
+  c = c + 0;
+  a = a + 0;
+  ptrit_t *bb = b;
+  ptrit_t *a0 = a;
+
+  pcurl_s2(c++, b, a++);
+  // 728 = 8*91
+  for(i = 0; i < STATE_SIZE / 8; ++i)
+  {
+    pcurl_s2(b++, c, a++);
+    pcurl_s2(c++, b, a++);
+    pcurl_s2(b++, c, a++);
+    pcurl_s2(c++, b, a++);
+  }
+
+  for(i = 0; i < STATE_SIZE / 8; ++i)
+  {
+    pcurl_s2(b++, c, bb++);
+    pcurl_s2(c++, b, bb++);
+    pcurl_s2(b++, c, bb++);
+    pcurl_s2(c++, b, bb++);
+  }
+  *bb = *a0;
+}
+
+void pcurl_init(pcurl_t *ctx, size_t round_count)
+{
+  pcurl_reset(ctx);
+  ctx->round_count = round_count;
+}
+void pcurl_absorb(pcurl_t *ctx, ptrit_t const* ptrits, size_t length)
+{
+  size_t n = length / RATE;
+  for(; n--;)
+  {
+    memcpy(ctx->a, ptrits, RATE * sizeof(ptrit_t));
+    ptrits += RATE;
+    // no padding!
+    pcurl_transform(ctx);
+  }
+  length %= RATE;
+
+  if(0 < length)
+  {
+    memcpy(ctx->a, ptrits, length * sizeof(ptrit_t));
+    ptrits += length;
+    // no padding!
+    pcurl_transform(ctx);
+    length = 0;
+  }
+}
+void pcurl_squeeze(pcurl_t *ctx, ptrit_t* ptrits, size_t length)
+{
+  size_t n = length / RATE;
+  for(; n--;)
+  {
+    memcpy(ptrits, ctx->a, RATE * sizeof(ptrit_t));
+    ptrits += RATE;
+    // no padding!
+    pcurl_transform(ctx);
+  }
+  length %= RATE;
+
+  if(0 < length)
+  {
+    memcpy(ptrits, ctx->a, length * sizeof(ptrit_t));
+    ptrits += length;
+    // no padding!
+    pcurl_transform(ctx);
+    length = 0;
+  }
+}
+
+#if defined(PCURL_DEBUG)
+#include <stdio.h>
+static void ptrit_print(ptrit_t const *p)
+{
+  printf("%d:%d ", (int)(p->low & 1), (int)(p->high & 1));
+}
+static void ptrits_print(size_t n, ptrit_t const *p)
+{
+  for(; n--;)
+    ptrit_print(p++);
+  printf("\n");
+}
+static void ptrits_print2(size_t n, ptrit_t const *p)
+{
+  ptrits_print((n + 1) / 2, p);
+  ptrits_print(n - (n + 1) / 2, p + (n + 1) / 2);
+}
+static void ptrits_rprint(size_t n, ptrit_t const *p)
+{
+  for(p += n; n--;)
+    ptrit_print(--p);
+  printf("\n");
+}
+#endif
+
+#if !defined(PCURL_MEM_SHORT)
+void pcurl_transform(pcurl_t *ctx)
+{
+  size_t round;
+
+  ptrits_print2(STATE_SIZE, ctx->a);
+  for(round = 0; round < ctx->round_count; ++round)
+  {
+    pcurl_sbox(ctx->c, ctx->a);
+    memcpy(ctx->a, ctx->c, sizeof(ctx->a));
+#if defined(PCURL_DEBUG)
+    printf("---\n");
+    ptrits_print2(STATE_SIZE, ctx->a);
+#endif
+  }
+}
+#else
+void pcurl_transform(pcurl_t *ctx)
+{
+  size_t round;
+
+  ctx->b[364] = ctx->a[0];
+#if defined(PCURL_DEBUG)
+  ptrits_print((STATE_SIZE + 1) / 2, ctx->a);
+  ptrits_print((STATE_SIZE + 1) / 2, ctx->b);
+#endif
+  for(round = 0; round < ctx->round_count / 3; ++round)
+  {
+    pcurl_sbox2_0(ctx->a, ctx->b, ctx->c);
+#if defined(PCURL_DEBUG)
+    printf("---\n");
+    ptrits_print((STATE_SIZE + 1) / 2, ctx->c);
+    ptrits_rprint((STATE_SIZE + 1) / 2, ctx->a);
+#endif
+    pcurl_sbox2_1(ctx->a, ctx->b, ctx->c);
+#if defined(PCURL_DEBUG)
+    printf("---\n");
+    ptrits_rprint((STATE_SIZE + 1) / 2, ctx->b);
+    ptrits_rprint((STATE_SIZE + 1) / 2, ctx->c);
+#endif
+    pcurl_sbox2_2(ctx->a, ctx->b, ctx->c);
+#if defined(PCURL_DEBUG)
+    printf("---\n");
+    ptrits_print((STATE_SIZE + 1) / 2, ctx->a);
+    ptrits_print((STATE_SIZE + 1) / 2, ctx->b);
+#endif
+  }
+}
+#endif
+void pcurl_reset(pcurl_t *ctx)
+{
+  //TODO: memset_safe
+#if defined(PTRIT_CVT_ANDN)
+#if !defined(PCURL_MEM_SHORT)
+  memset(ctx->a, -1, sizeof(ctx->a));
+  memset(ctx->c, -1, sizeof(ctx->c));
+#else
+  memset(ctx->a, -1, sizeof(ctx->a));
+  memset(ctx->b, -1, sizeof(ctx->b));
+  memset(ctx->c, -1, sizeof(ctx->c));
+#endif
+#endif
+
+#if defined(PTRIT_CVT_ORN)
+  size_t i;
+#if !defined(PCURL_MEM_SHORT)
+  for(i = 0; i < STATE_SIZE; ++i)
+  {
+    memset(&ctx->a[i].low, 0, sizeof(ptrit_s));
+    memset(&ctx->a[i].high, -1, sizeof(ptrit_s));
+    memset(&ctx->c[i].low, 0, sizeof(ptrit_s));
+    memset(&ctx->c[i].high, -1, sizeof(ptrit_s));
+  }
+#else
+  for(i = 0; i < (STATE_SIZE + 1) / 2; ++i)
+  {
+    memset(&ctx->a[i].low, 0, sizeof(ptrit_s));
+    memset(&ctx->a[i].high, -1, sizeof(ptrit_s));
+    memset(&ctx->b[i].low, 0, sizeof(ptrit_s));
+    memset(&ctx->b[i].high, -1, sizeof(ptrit_s));
+    memset(&ctx->c[i].low, 0, sizeof(ptrit_s));
+    memset(&ctx->c[i].high, -1, sizeof(ptrit_s));
+  }
+#endif
+#endif
 }
 
 #define __INDEX_TABLE                                                                                                  \
@@ -149,16 +487,16 @@ void ptrit_curl_sbox(ptrit_t *c, ptrit_t const *s)
       25, 389, 24, 388, 23, 387, 22, 386, 21, 385, 20, 384, 19, 383, 18, 382, 17, 381, 16, 380, 15, 379, 14, 378, 13,  \
       377, 12, 376, 11, 375, 10, 374, 9, 373, 8, 372, 7, 371, 6, 370, 5, 369, 4, 368, 3, 367, 2, 366, 1, 365, 0
 
-static size_t const CURL_INDEX[STATE_LENGTH + 1] = { __INDEX_TABLE };
+static size_t const CURL_INDEX[STATE_SIZE + 1] = { __INDEX_TABLE };
 // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
 
 #if defined(PTRIT_64)
-void ptrit_curl_sbox_64(ptrit_t *const c, ptrit_t const *const s)
+void pcurl_sbox_64(ptrit_t *const c, ptrit_t const *const s)
 {
   ptrit_s alpha, beta, delta;
   size_t i = 0;
 
-  for(; i < STATE_LENGTH; ++i)
+  for(; i < STATE_SIZE; ++i)
   {
     alpha = s[CURL_INDEX[i]].low;
     beta = s[CURL_INDEX[i]].high;
@@ -171,12 +509,12 @@ void ptrit_curl_sbox_64(ptrit_t *const c, ptrit_t const *const s)
 #endif
 
 #if !defined(PTRIT_AVX512)
-void ptrit_curl_sbox_dcurl(ptrit_t *c, ptrit_t const *s)
+void pcurl_sbox_dcurl(ptrit_t *c, ptrit_t const *s)
 {
   size_t i;
   size_t t1, t2;
   ptrit_s alpha, beta, delta;
-  for(i = 0; i < STATE_LENGTH; ++i)
+  for(i = 0; i < STATE_SIZE; ++i)
   {
     t1 = CURL_INDEX[i];
     t2 = CURL_INDEX[i + 1];
