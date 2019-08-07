@@ -220,6 +220,7 @@ static size_t const curl_index[STATE_SIZE + 1] = { CURL_SBOX_INDEX_TABLE };
 // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
 #endif
 
+#if !defined(PCURL_SBOX_OPT)
 void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
 {
 #if defined(PCURL_SBOX_INDEX)
@@ -258,7 +259,7 @@ void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
   }
 #endif
 }
-
+#else
 // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
 // a : [  0..  364]-- => --[0,728..365]++ ->   xxxxxxxxxxxx   -> ++[0    ..364]
 // b : [365..728,0]-- ->   xxxxxxxxxxxx   => --[364  ..  0]++ => ++[365..728,0]
@@ -351,6 +352,7 @@ void pcurl_sbox2_2(ptrit_t *a, ptrit_t *b, ptrit_t *c)
   }
   *bb = *a0;
 }
+#endif
 
 void pcurl_init(pcurl_t *ctx, size_t round_count)
 {
@@ -436,7 +438,7 @@ static void ptrits_rprint(size_t n, ptrit_t const *p)
 }
 #endif
 
-#if defined(PCURL_SBOX_MEMSHORT)
+#if defined(PCURL_SBOX_OPT)
 void pcurl_transform(pcurl_t *ctx)
 {
   size_t round;
@@ -496,6 +498,7 @@ void pcurl_transform(pcurl_t *ctx)
     memcpy(a, c, sizeof(ptrit_t) * STATE_SIZE);
 }
 #endif
+
 void pcurl_reset(pcurl_t *ctx)
 {
   //TODO: memset_safe
