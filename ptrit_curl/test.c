@@ -144,19 +144,24 @@ void test_sbox()
 #endif
 }
 
-#define BENCH_SBOX_COUNT (330000)
+#if !defined(BENCH_SBOX_COUNT)
+#define BENCH_SBOX_COUNT (330000 / (PTRIT_SIZE / 64))
+#endif
+#if !defined(BENCH_TX_COUNT)
+#define BENCH_TX_COUNT (BENCH_SBOX_COUNT / 33)
+#endif
 
 void bench_pcurl_sbox()
 {
   ptrit_t s[STATE_SIZE]
     , c[STATE_SIZE]
     ;
-  size_t i = BENCH_SBOX_COUNT / (sizeof(ptrit_s) / sizeof(uint64_t));
+  size_t i = BENCH_SBOX_COUNT;
   clock_t runtime = clock();
   for(; i--;)
     pcurl_sbox(c, s);
   runtime = clock() - runtime;
-  printf("pcurl_sbox time = %d\n", (int)runtime);
+  printf("pcurl_sbox\t: %d\n", (int)runtime);
 }
 
 #if defined(PTRIT_64)
@@ -165,12 +170,12 @@ void bench_pcurl_sbox_64()
   ptrit_t s[STATE_SIZE]
     , c[STATE_SIZE]
     ;
-  size_t i = BENCH_SBOX_COUNT / (sizeof(ptrit_s) / sizeof(uint64_t));
+  size_t i = BENCH_SBOX_COUNT;
   clock_t runtime = clock();
   for(; i--;)
     pcurl_sbox_64(c, s);
   runtime = clock() - runtime;
-  printf("pcurl_sbox_64   time = %d\n", (int)runtime);
+  printf("pcurl_sbox_64  \t: %d\n", (int)runtime);
 }
 #endif
 
@@ -180,41 +185,52 @@ void bench_pcurl_sbox_dcurl()
   ptrit_t s[STATE_SIZE]
     , c[STATE_SIZE]
     ;
-  size_t i = BENCH_SBOX_COUNT / (sizeof(ptrit_s) / sizeof(uint64_t));
+  size_t i = BENCH_SBOX_COUNT;
   clock_t runtime = clock();
   for(; i--;)
     pcurl_sbox_dcurl(c, s);
   runtime = clock() - runtime;
-  printf("pcurl_sbox_dcurl time = %d\n", (int)runtime);
+  printf("pcurl_sbox_dcurl\t: %d\n", (int)runtime);
 }
 #endif
 
 void bench_sbox()
 {
   bench_pcurl_sbox();
+#if defined(PCURL_SBOX_INDEX)
 #if defined(PTRIT_64)
   bench_pcurl_sbox_64();
 #endif
 #if !defined(PTRIT_AVX512)
   bench_pcurl_sbox_dcurl();
 #endif
+#endif
+}
+void bench_hash()
+{
+  ptrit_t tx[8019];
+  ptrit_t hash[RATE];
+  pcurl_t c;
+
+  memset(tx, -1, sizeof(tx));
+  
+  size_t i = BENCH_TX_COUNT;
+  clock_t runtime = clock();
+  for(; i--;)
+    pcurl_hash_data(&c, tx, 8019, hash);
+  runtime = clock() - runtime;
+  printf("pcurl_hash_data\t: %d\n", (int)runtime);
 }
 
 int main()
 {
-  //test_pcurl_s2();
   test_curl();
-  //test_sbox();
   bench_sbox();
   bench_sbox();
+  bench_hash();
+  bench_hash();
   bench_sbox();
-  bench_sbox();
-  bench_sbox();
-  bench_sbox();
+  bench_hash();
 
-  //test_curl_s2();
-  //test_curl_s2_trit();
-  //test_curl_s2_andn();
-  //xx();
   return 0;
 }
