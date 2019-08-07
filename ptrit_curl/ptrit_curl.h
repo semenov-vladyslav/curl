@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define RATE 243
@@ -97,10 +98,6 @@ void trits_tep_to_te1(
   trit_te1_t *dst,
   ptrit_t const *src, size_t idx, // idx < PTRIT_SIZE
   size_t n);
-
-void pcurl_sbox(ptrit_t *c, ptrit_t const *s);
-
-#define PCURL_MEM_SHORT
 
 typedef struct
 {

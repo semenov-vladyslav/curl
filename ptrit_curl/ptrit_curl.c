@@ -3,6 +3,12 @@
 #include <string.h>
 #include <assert.h>
 
+#if defined(_MSC_VER)
+#define FORCE_INLINE __force_inline
+#else
+#define FORCE_INLINE inline
+#endif
+
 #if defined(PTRIT_NEON)
 #define ORN(x,y) vornq_u64(y,x)
 #define XOR(x,y) veorq_u64(x,y)
@@ -160,12 +166,7 @@ void trits_tep_to_te1(
   }
 }
 
-#if defined(_MSC_VER)
-#define FORCE_INLINE __force_inline
-#else
-#define FORCE_INLINE inline
-#endif
-static FORCE_INLINE 
+static FORCE_INLINE
 void pcurl_s2(ptrit_t const *a, ptrit_t const *b, ptrit_t *c)
 {
 #if defined(PTRIT_CVT_ORN)
@@ -221,6 +222,7 @@ static size_t const curl_index[STATE_SIZE + 1] = { CURL_SBOX_INDEX_TABLE };
 #endif
 
 #if !defined(PCURL_SBOX_OPT)
+static FORCE_INLINE
 void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
 {
 #if defined(PCURL_SBOX_INDEX)
@@ -234,8 +236,8 @@ void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
     i2 = curl_index[i + 1];
 
     d = AND(s[i1].low, XOR(s[i2].low, s[i1].high));
-    c[i].low = NOT(delta);
-    c[i].high = OR(XOR(s[i1].low, s[i2].high), delta);
+    c[i].low = NOT(d);
+    c[i].high = OR(XOR(s[i1].low, s[i2].high), d);
   }
 #else
   size_t i;
@@ -265,7 +267,8 @@ void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
 // b : [365..728,0]-- ->   xxxxxxxxxxxx   => --[364  ..  0]++ => ++[365..728,0]
 // c : xxxxxxxxxxxx   => ++[0    ..364]-- => --[0,728..365]++ ->   xxxxxxxxxxxx
 // c : xxxxxxxxxxxx   => --[364  ..  0]++ => ++[365..728,0]-- ->   xxxxxxxxxxxx
-void pcurl_sbox2_0(ptrit_t *a, ptrit_t *b, ptrit_t *c)
+static FORCE_INLINE
+void pcurl_sbox_0(ptrit_t *a, ptrit_t *b, ptrit_t *c)
 {
   size_t i;
 
@@ -294,7 +297,8 @@ void pcurl_sbox2_0(ptrit_t *a, ptrit_t *b, ptrit_t *c)
   }
   *aa = *c0;
 }
-void pcurl_sbox2_1(ptrit_t *a, ptrit_t *b, ptrit_t *c)
+static FORCE_INLINE
+void pcurl_sbox_1(ptrit_t *a, ptrit_t *b, ptrit_t *c)
 {
   size_t i;
 
@@ -323,7 +327,8 @@ void pcurl_sbox2_1(ptrit_t *a, ptrit_t *b, ptrit_t *c)
   }
   *cc = *b0;
 }
-void pcurl_sbox2_2(ptrit_t *a, ptrit_t *b, ptrit_t *c)
+static FORCE_INLINE
+void pcurl_sbox_2(ptrit_t *a, ptrit_t *b, ptrit_t *c)
 {
   size_t i;
 
@@ -364,7 +369,7 @@ void pcurl_absorb(pcurl_t *ctx, ptrit_t const* ptrits, size_t length)
   size_t n = length / RATE;
   for(; n--;)
   {
-    memcpy(ctx->a, ptrits, RATE * sizeof(ptrit_t));
+    memcpy(ctx->s, ptrits, RATE * sizeof(ptrit_t));
     ptrits += RATE;
     // no padding!
     pcurl_transform(ctx);
@@ -373,7 +378,7 @@ void pcurl_absorb(pcurl_t *ctx, ptrit_t const* ptrits, size_t length)
 
   if(0 < length)
   {
-    memcpy(ctx->a, ptrits, length * sizeof(ptrit_t));
+    memcpy(ctx->s, ptrits, length * sizeof(ptrit_t));
     ptrits += length;
     // no padding!
     pcurl_transform(ctx);
@@ -385,7 +390,7 @@ void pcurl_squeeze(pcurl_t *ctx, ptrit_t* ptrits, size_t length)
   size_t n = length / RATE;
   for(; n--;)
   {
-    memcpy(ptrits, ctx->a, RATE * sizeof(ptrit_t));
+    memcpy(ptrits, ctx->s, RATE * sizeof(ptrit_t));
     ptrits += RATE;
     // no padding!
     pcurl_transform(ctx);
@@ -394,7 +399,7 @@ void pcurl_squeeze(pcurl_t *ctx, ptrit_t* ptrits, size_t length)
 
   if(0 < length)
   {
-    memcpy(ptrits, ctx->a, length * sizeof(ptrit_t));
+    memcpy(ptrits, ctx->s, length * sizeof(ptrit_t));
     ptrits += length;
     // no padding!
     pcurl_transform(ctx);
@@ -403,7 +408,7 @@ void pcurl_squeeze(pcurl_t *ctx, ptrit_t* ptrits, size_t length)
 }
 void pcurl_get_hash(pcurl_t *ctx, ptrit_t* hash)
 {
-  memcpy(ptrits, ctx->a, RATE * sizeof(ptrit_t));
+  memcpy(hash, ctx->s, RATE * sizeof(ptrit_t));
   pcurl_reset(ctx);
 }
 void pcurl_hash_data(pcurl_t *ctx, ptrit_t const *data, size_t size, ptrit_t* hash)
@@ -453,19 +458,19 @@ void pcurl_transform(pcurl_t *ctx)
 #endif
   for(round = 0; round < ctx->round_count / 3; ++round)
   {
-    pcurl_sbox2_0(a, b, c);
+    pcurl_sbox_0(a, b, c);
 #if defined(PCURL_DEBUG)
     printf("---\n");
     ptrits_print((STATE_SIZE + 1) / 2, c);
     ptrits_rprint((STATE_SIZE + 1) / 2, a);
 #endif
-    pcurl_sbox2_1(a, b, c);
+    pcurl_sbox_1(a, b, c);
 #if defined(PCURL_DEBUG)
     printf("---\n");
     ptrits_rprint((STATE_SIZE + 1) / 2, b);
     ptrits_rprint((STATE_SIZE + 1) / 2, c);
 #endif
-    pcurl_sbox2_2(a, b, c);
+    pcurl_sbox_2(a, b, c);
 #if defined(PCURL_DEBUG)
     printf("---\n");
     ptrits_print((STATE_SIZE + 1) / 2, a);
@@ -517,7 +522,6 @@ void pcurl_reset(pcurl_t *ctx)
     memset(&ctx->s[i].low, 0, sizeof(ptrit_s));
     memset(&ctx->s[i].high, -1, sizeof(ptrit_s));
   }
-#endif
 #endif
 }
 

@@ -6,6 +6,23 @@
 
 #include "ptrit_curl.h"
 
+#if !defined(BENCH_SBOX_COUNT)
+#define BENCH_SBOX_COUNT (330000 / (PTRIT_SIZE / 64))
+#endif
+#if !defined(BENCH_TX_COUNT)
+#define BENCH_TX_COUNT (BENCH_SBOX_COUNT / 33)
+#endif
+
+#define NO_BENCH_SBOX
+
+#ifndef NO_BENCH_SBOX
+#if defined(PCURL_SBOX_OPT)
+void pcurl_sbox_0(ptrit_t *a, ptrit_t *b, ptrit_t *c);
+#else
+void pcurl_sbox(ptrit_t *c, ptrit_t const *s);
+#endif
+#endif
+
 uint64_t rng_step(uint64_t *rnd)
 {
   uint64_t d = (*rnd << 13) + 0x12345678 - (*rnd >> 7) * 7736287445;
@@ -99,7 +116,7 @@ void test_curl()
   trits_te1_to_tep(pdata, PTRIT_SIZE - 4, data, sizeof(data));
   pcurl_absorb(&curl, pdata, sizeof(data));
   //pcurl_squeeze(&curl, ph2, sizeof(hash));
-  memcpy(ph2, curl.a, RATE * sizeof(ptrit_t));
+  pcurl_get_hash(&curl, ph2);
 
   {
     int r = 1;
@@ -114,6 +131,7 @@ void test_curl()
   }
 }
 
+#ifndef NO_BENCH_SBOX
 void test_sbox()
 {
   int r = 1;
@@ -131,6 +149,7 @@ void test_sbox()
 
   pcurl_sbox(c, s);
 
+#if defined(PCURL_SBOX_INDEX)
 #if defined(PTRIT_64)
   pcurl_sbox_64(c2, s);
   r = memcmp(c, c2, sizeof(c));
@@ -142,14 +161,8 @@ void test_sbox()
   r = memcmp(c, c2, sizeof(c));
   printf("pcurl_sbox_dcurl test %s\n", r ? "failed" : "ok");
 #endif
+#endif
 }
-
-#if !defined(BENCH_SBOX_COUNT)
-#define BENCH_SBOX_COUNT (330000 / (PTRIT_SIZE / 64))
-#endif
-#if !defined(BENCH_TX_COUNT)
-#define BENCH_TX_COUNT (BENCH_SBOX_COUNT / 33)
-#endif
 
 void bench_pcurl_sbox()
 {
@@ -164,6 +177,7 @@ void bench_pcurl_sbox()
   printf("pcurl_sbox\t: %d\n", (int)runtime);
 }
 
+#if defined(PCURL_SBOX_INDEX)
 #if defined(PTRIT_64)
 void bench_pcurl_sbox_64()
 {
@@ -193,6 +207,7 @@ void bench_pcurl_sbox_dcurl()
   printf("pcurl_sbox_dcurl\t: %d\n", (int)runtime);
 }
 #endif
+#endif
 
 void bench_sbox()
 {
@@ -206,6 +221,8 @@ void bench_sbox()
 #endif
 #endif
 }
+#endif
+
 void bench_hash()
 {
   ptrit_t tx[8019];
@@ -225,11 +242,13 @@ void bench_hash()
 int main()
 {
   test_curl();
+#ifndef NO_BENCH_SBOX
   bench_sbox();
   bench_sbox();
+  bench_sbox();
+#endif
   bench_hash();
   bench_hash();
-  bench_sbox();
   bench_hash();
 
   return 0;
