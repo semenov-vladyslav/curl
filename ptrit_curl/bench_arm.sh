@@ -16,6 +16,13 @@ make
 ./pcurl
 cd ..
 
+mkdir .build_${CC}_64_orn_opt
+cd .build_${CC}_64_orn_opt
+cmake -G "Unix Makefiles" -DPTRIT_PLATFORM=PTRIT_64 -DPTRIT_CVT=PTRIT_CVT_ORN -DPCURL_SBOX=PCURL_SBOX_OPT ..
+make
+./pcurl
+cd ..
+
 mkdir .build_${CC}_64_andn_opt
 cd .build_${CC}_64_andn_opt
 cmake -G "Unix Makefiles" -DPTRIT_PLATFORM=PTRIT_64 -DPTRIT_CVT=PTRIT_CVT_ANDN -DPCURL_SBOX=PCURL_SBOX_OPT ..
