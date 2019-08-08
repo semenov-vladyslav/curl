@@ -107,10 +107,12 @@ void ptrits_print(size_t n, ptrit_t const *p);
 
 typedef struct
 {
-#if defined(PCURL_SBOX_OPT)
+#if defined(PCURL_STATE_SHORT)
   ptrit_t s[3 * (STATE_SIZE + 1) / 2];
-#else
+#elif defined(PCURL_STATE_DOUBLE)
   ptrit_t s[2 * STATE_SIZE];
+#else
+#error Invalid PCURL_STATE.
 #endif
   size_t round_count;
 } pcurl_t;
@@ -123,13 +125,3 @@ void pcurl_reset(pcurl_t *ctx);
 
 void pcurl_get_hash(pcurl_t *ctx, ptrit_t* hash);
 void pcurl_hash_data(pcurl_t *ctx, ptrit_t const *data, size_t size, ptrit_t* hash);
-
-#if defined(PCURL_SBOX_INDEX)
-#if defined(PTRIT_64)
-void pcurl_sbox_64(ptrit_t *const c, ptrit_t const *const s);
-#endif
-
-#if !defined(PTRIT_AVX512)
-void pcurl_sbox_dcurl(ptrit_t *c, ptrit_t const *s);
-#endif
-#endif

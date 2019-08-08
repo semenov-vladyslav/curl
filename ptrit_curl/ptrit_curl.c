@@ -76,13 +76,13 @@ static __inline __m128i _mm_set_epi64x(__int64 _I1, __int64 _I0)
 #define NOT(x) (~(x))
 #define ANDN(x,y) AND(NOT(x),(y))
 #define ORN(x,y) OR(NOT(x),(y))
-#endif
+#endif //PTRIT_PLATFORM generic
 
 #define XORANDN(x,y,z) XOR(x,ANDN(y,z))
 #define XORAND(x,y,z) XOR(x,AND(y,z))
 #define XORORN(x,y,z) XOR(x,ORN(y,z))
-#endif
-#endif
+#endif //PTRIT_AVX512F
+#endif //PTRIT_NEON
 
 
 static uint64_t const cvt_te1_to_tep[4][2] =
@@ -93,14 +93,15 @@ static uint64_t const cvt_te1_to_tep[4][2] =
   { 0, 1 }, // +1
   { 0, 0 }, // NaT
   { 1, 0 }, // -1
-#endif
-#if defined(PTRIT_CVT_ORN)
+#elif defined(PTRIT_CVT_ORN)
 // -1 -> (0,0); 0 -> (0,1); +1 -> (1,1)
   { 0, 1 }, // 0
   { 1, 1 }, // +1
   { 0, 1 }, // NaT
   { 0, 0 }, // -1
-#endif
+#else
+#error Invalid PTRIT_CVT.
+#endif //PTRIT_CVT
 };
 
 static trit_te1_t const cvt_tep_to_te1[2][2] = 
@@ -109,12 +110,13 @@ static trit_te1_t const cvt_tep_to_te1[2][2] =
   // -1 -> (1,0); 0 -> (1,1); +1 -> (0,1)
   { NaT, +1 },
   { -1, 0 },
-#endif
-#if defined(PTRIT_CVT_ORN)
+#elif defined(PTRIT_CVT_ORN)
 // -1 -> (0,0); 0 -> (0,1); +1 -> (1,1)
   { -1, 0 },
   { NaT, +1 },
-#endif
+#else
+#error Invalid PTRIT_CVT.
+#endif //PTRIT_CVT
 };
 
 void trits_te1_to_tep(
@@ -169,6 +171,7 @@ void trits_tep_to_te1(
 static FORCE_INLINE
 void pcurl_s2(ptrit_t const *a, ptrit_t const *b, ptrit_t *c)
 {
+#if defined(PCURL_S2_CIRCUIT4)
 #if defined(PTRIT_CVT_ORN)
   // (Xor AH (Orn BL AL),Xor AL (Orn BH (Xor AH (Orn BL AL))))
   c->low = XORORN(a->high, b->low, a->low);
@@ -178,11 +181,23 @@ void pcurl_s2(ptrit_t const *a, ptrit_t const *b, ptrit_t *c)
   c->low = XORANDN(a->high, b->low, a->low);
   c->high = XORAND(a->low, b->high, c->low);
 #else
-#error Invalid ptrit cvt.
-#endif
+#error Invalid PTRIT_CVT.
+#endif //PTRIT_CVT
+
+#elif defined(PCURL_S2_CIRCUIT5)
+#if defined(PTRIT_CVT_ANDN)
+  ptrit_s d = AND(a->low, XOR(b->low, a->high));
+  c->low = NOT(d);
+  c->high = OR(XOR(a->low, b->high), d);
+#else
+#error Invalid PTRIT_CVT: with PCURL_S2_CIRCUIT5 only PTRIT_CVT_ANDN can be used.
+#endif //PTRIT_CVT
+#else
+#error Invalid PCURL_S2_CIRCUIT.
+#endif //PCURL_S2_CIRCUIT
 }
 
-#if defined(PCURL_SBOX_INDEX)
+#if defined(PCURL_S2_ARGS_LUT)
 #define CURL_SBOX_INDEX_TABLE                                                                                                  \
   0, 364, 728, 363, 727, 362, 726, 361, 725, 360, 724, 359, 723, 358, 722, 357, 721, 356, 720, 355, 719, 354, 718,     \
       353, 717, 352, 716, 351, 715, 350, 714, 349, 713, 348, 712, 347, 711, 346, 710, 345, 709, 344, 708, 343, 707,    \
@@ -219,30 +234,66 @@ void pcurl_s2(ptrit_t const *a, ptrit_t const *b, ptrit_t *c)
 
 static size_t const curl_index[STATE_SIZE + 1] = { CURL_SBOX_INDEX_TABLE };
 // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
-#endif
+#endif //PCURL_S2_ARGS_LUT
 
-#if defined(PCURL_SBOX_INDEX)
+#if defined(PCURL_STATE_DOUBLE)
 static FORCE_INLINE
 void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
 {
+#if defined(PCURL_S2_ARGS_LUT)
   size_t i;
-  size_t i1, i2;
 
-  ptrit_s d;
+#if defined(PCURL_SBOX_UNWIND_2)
+  pcurl_s2(s+curl_index[0], s+curl_index[1], c);
+  for(i = 1; i < STATE_SIZE;)
+  {
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+  }
+#elif defined(PCURL_SBOX_UNWIND_4)
+  pcurl_s2(s+curl_index[0], s+curl_index[1], c);
+  for(i = 1; i < STATE_SIZE;)
+  {
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+  }
+#elif defined(PCURL_SBOX_UNWIND_8)
+  pcurl_s2(s+curl_index[0], s+curl_index[1], c);
+  for(i = 1; i < STATE_SIZE;)
+  {
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
+    ++i;
+  }
+#else
   for(i = 0; i < STATE_SIZE; ++i)
   {
-    i1 = curl_index[i];
-    i2 = curl_index[i + 1];
-
-    d = AND(s[i1].low, XOR(s[i2].low, s[i1].high));
-    c[i].low = NOT(d);
-    c[i].high = OR(XOR(s[i1].low, s[i2].high), d);
+    pcurl_s2(s+curl_index[i], s+curl_index[i+1], c+i);
   }
-}
-#elif defined(PCURL_SBOX_MEM2X)
-static FORCE_INLINE
-void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
-{
+#endif //PCURL_SBOX_UNWIND
+
+#elif defined(PCURL_S2_ARGS_PTR)
   size_t i;
 
   // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
@@ -250,6 +301,23 @@ void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
   pcurl_s2(x, y, c++);
   x = s + 728;
 
+#if defined(PCURL_SBOX_UNWIND_2)
+  // 728 = 8*91
+  for(i = 0; i < STATE_SIZE / 2; ++i)
+  {
+    pcurl_s2(y--, x, c++);
+    pcurl_s2(x--, y, c++);
+  }
+#elif defined(PCURL_SBOX_UNWIND_4)
+  // 728 = 8*91
+  for(i = 0; i < STATE_SIZE / 4; ++i)
+  {
+    pcurl_s2(y--, x, c++);
+    pcurl_s2(x--, y, c++);
+    pcurl_s2(y--, x, c++);
+    pcurl_s2(x--, y, c++);
+  }
+#elif defined(PCURL_SBOX_UNWIND_8)
   // 728 = 8*91
   for(i = 0; i < STATE_SIZE / 8; ++i)
   {
@@ -262,8 +330,17 @@ void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
     pcurl_s2(y--, x, c++);
     pcurl_s2(x--, y, c++);
   }
+#else
+#error Invalid PCURL_SBOX_UNWIND.
+#endif //PCURL_SBOX_UNWIND
+
+#else
+#error Invalid PCURL_S2_ARGS.
+#endif //PCURL_S2_ARGS
 }
-#elif defined(PCURL_SBOX_OPT)
+
+#elif defined(PCURL_STATE_SHORT)
+#if defined(PCURL_S2_ARGS_PTR)
 // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
 // a : [  0..  364]-- => --[0,728..365]++ ->   xxxxxxxxxxxx   -> ++[0    ..364]
 // b : [365..728,0]-- ->   xxxxxxxxxxxx   => --[364  ..  0]++ => ++[365..728,0]
@@ -281,6 +358,21 @@ void pcurl_sbox_0(ptrit_t *a, ptrit_t *b, ptrit_t *c)
   ptrit_t *c0 = c;
 
   pcurl_s2(b--, a, c++);
+
+#if defined(PCURL_SBOX_UNWIND_2)
+  // 728 = 8*91
+  for(i = 0; i < STATE_SIZE / 4; ++i)
+  {
+    pcurl_s2(a--, b, c++);
+    pcurl_s2(b--, a, c++);
+  }
+
+  for(i = 0; i < STATE_SIZE / 4; ++i)
+  {
+    pcurl_s2(a--, b, aa--);
+    pcurl_s2(b--, a, aa--);
+  }
+#elif defined(PCURL_SBOX_UNWIND_4)
   // 728 = 8*91
   for(i = 0; i < STATE_SIZE / 8; ++i)
   {
@@ -297,6 +389,10 @@ void pcurl_sbox_0(ptrit_t *a, ptrit_t *b, ptrit_t *c)
     pcurl_s2(a--, b, aa--);
     pcurl_s2(b--, a, aa--);
   }
+#else
+#error Invalid PCURL_SBOX_UNWIND.
+#endif
+
   *aa = *c0;
 }
 static FORCE_INLINE
@@ -311,6 +407,21 @@ void pcurl_sbox_1(ptrit_t *a, ptrit_t *b, ptrit_t *c)
   ptrit_t *b0 = b;
 
   pcurl_s2(a++, c, b--);
+
+#if defined(PCURL_SBOX_UNWIND_2)
+  // 728 = 8*91
+  for(i = 0; i < STATE_SIZE / 4; ++i)
+  {
+    pcurl_s2(c--, a, b--);
+    pcurl_s2(a++, c, b--);
+  }
+
+  for(i = 0; i < STATE_SIZE / 4; ++i)
+  {
+    pcurl_s2(c--, a, cc--);
+    pcurl_s2(a++, c, cc--);
+  }
+#elif defined(PCURL_SBOX_UNWIND_4)
   // 728 = 8*91
   for(i = 0; i < STATE_SIZE / 8; ++i)
   {
@@ -327,6 +438,10 @@ void pcurl_sbox_1(ptrit_t *a, ptrit_t *b, ptrit_t *c)
     pcurl_s2(c--, a, cc--);
     pcurl_s2(a++, c, cc--);
   }
+#else
+#error Invalid PCURL_SBOX_UNWIND.
+#endif
+
   *cc = *b0;
 }
 static FORCE_INLINE
@@ -341,6 +456,21 @@ void pcurl_sbox_2(ptrit_t *a, ptrit_t *b, ptrit_t *c)
   ptrit_t *a0 = a;
 
   pcurl_s2(c++, b, a++);
+
+#if defined(PCURL_SBOX_UNWIND_2)
+  // 728 = 8*91
+  for(i = 0; i < STATE_SIZE / 4; ++i)
+  {
+    pcurl_s2(b++, c, a++);
+    pcurl_s2(c++, b, a++);
+  }
+
+  for(i = 0; i < STATE_SIZE / 4; ++i)
+  {
+    pcurl_s2(b++, c, bb++);
+    pcurl_s2(c++, b, bb++);
+  }
+#elif defined(PCURL_SBOX_UNWIND_4)
   // 728 = 8*91
   for(i = 0; i < STATE_SIZE / 8; ++i)
   {
@@ -357,9 +487,19 @@ void pcurl_sbox_2(ptrit_t *a, ptrit_t *b, ptrit_t *c)
     pcurl_s2(b++, c, bb++);
     pcurl_s2(c++, b, bb++);
   }
+#else
+#error Invalid PCURL_SBOX_UNWIND.
+#endif
+
   *bb = *a0;
 }
-#endif
+#else
+#error Invalid PCURL_S2_ARGS.
+#endif //PCURL_S2_ARGS
+#else
+#error Invalid PCURL_STATE.
+#endif //PCURL_STATE
+
 
 void pcurl_init(pcurl_t *ctx, size_t round_count)
 {
@@ -445,7 +585,7 @@ void ptrits_rprint(size_t n, ptrit_t const *p)
 }
 #endif
 
-#if defined(PCURL_SBOX_OPT)
+#if defined(PCURL_STATE_SHORT)
 void pcurl_transform(pcurl_t *ctx)
 {
   size_t round;
@@ -480,7 +620,7 @@ void pcurl_transform(pcurl_t *ctx)
 #endif
   }
 }
-#else
+#elif defined(PCURL_STATE_DOUBLE)
 void pcurl_transform(pcurl_t *ctx)
 {
   size_t round;
@@ -504,67 +644,32 @@ void pcurl_transform(pcurl_t *ctx)
   if(1 & ctx->round_count)
     memcpy(c, a, sizeof(ptrit_t) * STATE_SIZE);
 }
-#endif
+#else
+#error Invalid PCURL_STATE.
+#endif //PCURL_STATE
 
 void pcurl_reset(pcurl_t *ctx)
 {
   //TODO: memset_safe
 #if defined(PTRIT_CVT_ANDN)
+  // 0 -> (1,1)
   memset(ctx->s, -1, sizeof(ctx->s));
-#endif
 
-#if defined(PTRIT_CVT_ORN)
+#elif defined(PTRIT_CVT_ORN)
+  // 0 -> (0,1)
   size_t i;
-#if defined(PCURL_SBOX_OPT)
+#if defined(PCURL_STATE_SHORT)
   for(i = 0; i < 3 * (STATE_SIZE + 1) / 2; ++i)
-#else
+#elif defined(PCURL_STATE_DOUBLE)
   for(i = 0; i < 2 * STATE_SIZE; ++i)
-#endif
+#else
+#error Invalid PCURL_STATE.
+#endif //PCURL_STATE
   {
     memset(&ctx->s[i].low, 0, sizeof(ptrit_s));
     memset(&ctx->s[i].high, -1, sizeof(ptrit_s));
   }
-#endif
+#else
+#error Invalid PTRIT_CVT.
+#endif //PTRIT_CVT
 }
-
-#if defined(PCURL_SBOX_INDEX)
-#if defined(PTRIT_64)
-void pcurl_sbox_64(ptrit_t *const c, ptrit_t const *const s)
-{
-  ptrit_s alpha, beta, delta;
-  size_t i = 0;
-
-  for(; i < STATE_SIZE; ++i)
-  {
-    alpha = s[curl_index[i]].low;
-    beta = s[curl_index[i]].high;
-    delta = alpha & (s[curl_index[i + 1]].low ^ beta);
-
-    c[i].low = ~delta;
-    c[i].high = (alpha ^ s[curl_index[i + 1]].high) | delta;
-  }
-}
-#endif
-
-#if !defined(PTRIT_AVX512)
-void pcurl_sbox_dcurl(ptrit_t *c, ptrit_t const *s)
-{
-  size_t i;
-  size_t t1, t2;
-  ptrit_s alpha, beta, delta;
-  for(i = 0; i < STATE_SIZE; ++i)
-  {
-    t1 = curl_index[i];
-    t2 = curl_index[i + 1];
-
-    alpha = s[t1].low;
-    beta = s[t1].high;
-    delta = AND(alpha, XOR(s[t2].low, beta));
-    /* alpha & (lfrom[t2] ^ beta) */
-    c[i].low = NOT(delta); /* ~delta */
-    c[i].high = OR(XOR(alpha, s[t2].high),
-      delta); /* (alpha ^ hfrom[t2]) | delta */
-  }
-}
-#endif
-#endif
