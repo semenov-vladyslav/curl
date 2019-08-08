@@ -7,7 +7,7 @@
 #include "ptrit_curl.h"
 
 #if !defined(BENCH_SBOX_COUNT)
-#define BENCH_SBOX_COUNT (3300000 / (PTRIT_SIZE / 64))
+#define BENCH_SBOX_COUNT (33000 / (PTRIT_SIZE / 64))
 #endif
 #if !defined(BENCH_TX_COUNT)
 #define BENCH_TX_COUNT (BENCH_SBOX_COUNT / 33)
