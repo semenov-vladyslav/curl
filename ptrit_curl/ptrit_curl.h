@@ -88,6 +88,8 @@ typedef struct {
 } ptrit_t;
 
 typedef int8_t trit_te1_t;
+// not a trit value
+#define NaT 0
 
 void trits_te1_to_tep(
   ptrit_t *dst, size_t idx, // dst must be zero, idx < PTRIT_SIZE

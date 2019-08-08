@@ -107,13 +107,13 @@ static trit_te1_t const cvt_tep_to_te1[2][2] =
 {
 #if defined(PTRIT_CVT_ANDN)
   // -1 -> (1,0); 0 -> (1,1); +1 -> (0,1)
-  { 2, +1 },
+  { NaT, +1 },
   { -1, 0 },
 #endif
 #if defined(PTRIT_CVT_ORN)
 // -1 -> (0,0); 0 -> (0,1); +1 -> (1,1)
   { -1, 0 },
-  { 2, +1 },
+  { NaT, +1 },
 #endif
 };
 
@@ -513,7 +513,7 @@ void pcurl_reset(pcurl_t *ctx)
 
 #if defined(PTRIT_CVT_ORN)
   size_t i;
-#if defined(PCURL_SBOX_MEMSHORT)
+#if defined(PCURL_SBOX_OPT)
   for(i = 0; i < 3 * (STATE_SIZE + 1) / 2; ++i)
 #else
   for(i = 0; i < 2 * STATE_SIZE; ++i)
