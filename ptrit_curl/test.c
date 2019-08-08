@@ -230,6 +230,7 @@ void bench_hash()
   pcurl_t c;
 
   memset(tx, -1, sizeof(tx));
+  pcurl_init(&c, 27);
   
   size_t i = BENCH_TX_COUNT;
   clock_t runtime = clock();
