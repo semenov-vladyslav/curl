@@ -221,11 +221,10 @@ static size_t const curl_index[STATE_SIZE + 1] = { CURL_SBOX_INDEX_TABLE };
 // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
 #endif
 
-#if !defined(PCURL_SBOX_OPT)
+#if defined(PCURL_SBOX_INDEX)
 static FORCE_INLINE
 void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
 {
-#if defined(PCURL_SBOX_INDEX)
   size_t i;
   size_t i1, i2;
 
@@ -239,7 +238,11 @@ void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
     c[i].low = NOT(d);
     c[i].high = OR(XOR(s[i1].low, s[i2].high), d);
   }
-#else
+}
+#elif defined(PCURL_SBOX_MEM2X)
+static FORCE_INLINE
+void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
+{
   size_t i;
 
   // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
@@ -259,9 +262,8 @@ void pcurl_sbox(ptrit_t *c, ptrit_t const *s)
     pcurl_s2(y--, x, c++);
     pcurl_s2(x--, y, c++);
   }
-#endif
 }
-#else
+#elif defined(PCURL_SBOX_OPT)
 // 0, 364, 728, 363, 727, ..., 2, 366, 1, 365, 0
 // a : [  0..  364]-- => --[0,728..365]++ ->   xxxxxxxxxxxx   -> ++[0    ..364]
 // b : [365..728,0]-- ->   xxxxxxxxxxxx   => --[364  ..  0]++ => ++[365..728,0]
