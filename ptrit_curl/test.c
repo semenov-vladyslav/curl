@@ -2,6 +2,8 @@
 #include <memory.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <inttypes.h>
 #include <time.h>
 
 #include "ptrit_curl.h"
@@ -223,7 +225,31 @@ void bench_sbox()
 }
 #endif
 
-void bench_hash()
+void print_time(size_t trits_count, clock_t runtime)
+{
+  uint64_t data_size = PTRIT_SIZE * (uint64_t)trits_count;
+  uint64_t runtime_ms = (uint64_t)runtime * 1000 / CLOCKS_PER_SEC;
+  uint64_t trits_per_sec = CLOCKS_PER_SEC * data_size / runtime;
+  if(0 == trits_count % 8019)
+  {
+    uint64_t tx_count = trits_count / 8019;
+    uint64_t tx_per_sec = trits_per_sec / 8019;
+    printf("%"PRIu64" tx/s\t[%d x %"PRIu64" tx / %"PRIu64" ms]\n",
+      tx_per_sec,
+      PTRIT_SIZE,
+      tx_count,
+      runtime_ms);
+  } else
+  {
+    printf("%"PRIu64" t/s\t[%d x %"PRIu64" t / %"PRIu64" ms]\n",
+      trits_per_sec,
+      PTRIT_SIZE,
+      trits_count,
+      runtime_ms);
+  }
+}
+
+void bench_hash(size_t n)
 {
   ptrit_t tx[8019];
   ptrit_t hash[RATE];
@@ -232,25 +258,30 @@ void bench_hash()
   memset(tx, -1, sizeof(tx));
   pcurl_init(&c, 27);
   
-  size_t i = BENCH_TX_COUNT;
+  size_t i = n;
   clock_t runtime = clock();
   for(; i--;)
     pcurl_hash_data(&c, tx, 8019, hash);
   runtime = clock() - runtime;
-  printf("pcurl_hash_data\t: %d\n", (int)runtime);
+  printf("pcurl_hash_data\t");
+  print_time(8019 * n, runtime);
 }
 
-int main()
+int main(int argc, char const *argv[])
 {
+  int n = BENCH_TX_COUNT;
+  if(1 < argc)
+    n = atoi(argv[1]);
+  if(n < 0) n = BENCH_TX_COUNT;
   test_curl();
 #ifndef NO_BENCH_SBOX
   bench_sbox();
   bench_sbox();
   bench_sbox();
 #endif
-  bench_hash();
-  bench_hash();
-  bench_hash();
+  bench_hash(n);
+  bench_hash(n);
+  bench_hash(n);
 
   return 0;
 }
