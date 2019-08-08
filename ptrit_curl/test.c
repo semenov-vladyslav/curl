@@ -7,7 +7,7 @@
 #include "ptrit_curl.h"
 
 #if !defined(BENCH_SBOX_COUNT)
-#define BENCH_SBOX_COUNT (330000 / (PTRIT_SIZE / 64))
+#define BENCH_SBOX_COUNT (3300000 / (PTRIT_SIZE / 64))
 #endif
 #if !defined(BENCH_TX_COUNT)
 #define BENCH_TX_COUNT (BENCH_SBOX_COUNT / 33)
@@ -110,31 +110,21 @@ void test_curl()
   trit_te1_t h2[sizeof(hash)];
 
   pcurl_t curl;
-  printf("test_curl 0\n");
   pcurl_init(&curl, 27);
-  printf("test_curl 00\n");
   memset(pdata, 0, sizeof(pdata));
-  printf("test_curl 1\n");
   trits_te1_to_tep(pdata, 0, data, sizeof(data));
-  printf("test_curl 2\n");
   trits_te1_to_tep(pdata, PTRIT_SIZE - 4, data, sizeof(data));
-  printf("test_curl 3\n");
   pcurl_absorb(&curl, pdata, sizeof(data));
-  printf("test_curl 4\n");
   //pcurl_squeeze(&curl, ph2, sizeof(hash));
   pcurl_get_hash(&curl, ph2);
-  printf("test_curl 5\n");
-  ptrits_print(RATE, ph2);
 
   {
     int r = 1;
     trits_tep_to_te1(h2, ph2, 0, sizeof(hash));
-    printf("test_curl 6\n");
     r = (0 == memcmp(hash, h2, sizeof(hash)));
     printf("test_curl0 %s\n", r ? "ok" : "failed");
     assert(r);
     trits_tep_to_te1(h2, ph2, PTRIT_SIZE - 4, sizeof(hash));
-    printf("test_curl 7\n");
     r = (0 == memcmp(hash, h2, sizeof(hash)));
     printf("test_curl1 %s\n", r ? "ok" : "failed");
     assert(r);
@@ -252,7 +242,6 @@ void bench_hash()
 int main()
 {
   test_curl();
-  return 0;
 #ifndef NO_BENCH_SBOX
   bench_sbox();
   bench_sbox();

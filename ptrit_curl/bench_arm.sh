@@ -1,7 +1,7 @@
 #!/bin/sh
 
 #export CC=clang ./bench_arm.sh
-export PCURL_DEBUG=ON
+export PCURL_DEBUG=OFF
 
 mkdir .build_${CC}_neon_orn_opt
 cd .build_${CC}_neon_orn_opt
@@ -45,3 +45,4 @@ make
 ./pcurl > pcurl.log
 cd ..
 
+find . -name pcurl.log -print -exec tail -n 3 {} \;
