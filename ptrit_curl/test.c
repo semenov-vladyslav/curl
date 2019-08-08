@@ -241,7 +241,7 @@ void print_time(size_t trits_count, clock_t runtime)
       runtime_ms);
   } else
   {
-    printf("%"PRIu64" t/s\t[%d x %"PRIu64" t / %"PRIu64" ms]\n",
+    printf("%"PRIu64" t/s\t[%d x %zd t / %"PRIu64" ms]\n",
       trits_per_sec,
       PTRIT_SIZE,
       trits_count,
