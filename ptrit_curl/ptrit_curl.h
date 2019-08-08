@@ -101,6 +101,10 @@ void trits_tep_to_te1(
   ptrit_t const *src, size_t idx, // idx < PTRIT_SIZE
   size_t n);
 
+#if defined(PCURL_DEBUG)
+void ptrits_print(size_t n, ptrit_t const *p);
+#endif
+
 typedef struct
 {
 #if defined(PCURL_SBOX_OPT)

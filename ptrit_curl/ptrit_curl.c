@@ -422,22 +422,22 @@ void pcurl_hash_data(pcurl_t *ctx, ptrit_t const *data, size_t size, ptrit_t* ha
 
 #if defined(PCURL_DEBUG)
 #include <stdio.h>
-static void ptrit_print(ptrit_t const *p)
+void ptrit_print(ptrit_t const *p)
 {
-  printf("%d:%d ", (int)(p->low & 1), (int)(p->high & 1));
+  printf("%d:%d ", *(int const *)(&p->low) & 1, *(int const *)(&p->high) & 1);
 }
-static void ptrits_print(size_t n, ptrit_t const *p)
+void ptrits_print(size_t n, ptrit_t const *p)
 {
   for(; n--;)
     ptrit_print(p++);
   printf("\n");
 }
-static void ptrits_print2(size_t n, ptrit_t const *p)
+void ptrits_print2(size_t n, ptrit_t const *p)
 {
   ptrits_print((n + 1) / 2, p);
   ptrits_print(n - (n + 1) / 2, p + (n + 1) / 2);
 }
-static void ptrits_rprint(size_t n, ptrit_t const *p)
+void ptrits_rprint(size_t n, ptrit_t const *p)
 {
   for(p += n; n--;)
     ptrit_print(--p);
@@ -502,7 +502,7 @@ void pcurl_transform(pcurl_t *ctx)
 #endif
   }
   if(1 & ctx->round_count)
-    memcpy(a, c, sizeof(ptrit_t) * STATE_SIZE);
+    memcpy(c, a, sizeof(ptrit_t) * STATE_SIZE);
 }
 #endif
 
