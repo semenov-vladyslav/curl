@@ -29,7 +29,7 @@ typedef uint64x2_t ptrit_s;
 #else
 #if defined(PTRIT_AVX512)
 #if !defined(__AVX512F__)
-#warning __AVX512F__ is not defined
+#error __AVX512F__ is not defined
 #endif
 #include <immintrin.h>
 typedef __m512i ptrit_s;
@@ -37,7 +37,7 @@ typedef __m512i ptrit_s;
 
 #elif defined(PTRIT_AVX2)
 #if !defined(__AVX2__)
-#warning __AVX2__ is not defined
+#error __AVX2__ is not defined
 #endif
 #include <immintrin.h>
 typedef __m256i ptrit_s;
@@ -45,7 +45,7 @@ typedef __m256i ptrit_s;
 
 #elif defined(PTRIT_AVX)
 #if !defined(__AVX__)
-#warning __AVX__ is not defined
+#error __AVX__ is not defined
 #endif
 #include <immintrin.h>
 typedef __m256d ptrit_s;
@@ -53,7 +53,9 @@ typedef __m256d ptrit_s;
 
 #elif defined(PTRIT_SSE2)
 #if !defined(__SSE2__)
-#warning __SSE2__ is not defined
+#if !defined(_MSC_VER)
+#error __SSE2__ is not defined
+#endif
 #endif
 #include <immintrin.h>
 typedef __m128i ptrit_s;
@@ -61,7 +63,7 @@ typedef __m128i ptrit_s;
 
 #elif defined(PTRIT_SSE)
 #if !defined(__SSE__)
-#warning __SSE__ is not defined
+#error __SSE__ is not defined
 #endif
 #include <immintrin.h>
 typedef __m128d ptrit_s;
