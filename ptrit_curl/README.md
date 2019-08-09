@@ -75,6 +75,9 @@ Unwind factor for `pcurl_sbox` internal loop, ie. the number of call to `pcurl_s
 
 - `PCURL_STATE_DOUBLE`: trivially use a full state as additional as in the "basic" PCurl impl.
 
+## TODO: Fuse rounds of `pcurl_sbox`
+Make a fused `pcurl_sboxN` for `N=2,3,4`, find an optimized `pcurl_s2xN` circuit with `2^N` input arguments, determine pointer schedule for `pcurl_sbox`.
+
 # Build and Run
 
 See [bench_arm.sh](bench_arm.sh), [bench_x64_msvc.bat](bench_x64_msvc.bat), and [bench_x64_gcc.bat](bench_x64_gcc.bat) for examples. You might need to adjust your `PATH` environment variable.
