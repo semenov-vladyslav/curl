@@ -101,7 +101,8 @@ where
 
 ## Laptop HP ProBook
 
-Environment: Intel Core i7 4510U, Windows 8.1, msvc-14.1, gcc-8.0.1. 
+Environment: Intel Core i7 4510U, Windows 8.1, msvc-14.1, gcc-8.0.1.
+AVX512 implementation was tested with Intel sde-8.35.0.
 
 | Short config                   | Speed, tx/s | Distance, tx | Time, ms |
 | ------------------------------ | ---------- | ------------- | -------- |
