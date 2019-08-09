@@ -8,15 +8,10 @@ set PCURL_DEBUG=OFF
 
 
 set PATH=C:\Program Files\CMake\bin;C:\Windows\system32
-rem ;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall1.bat" amd64 8.1
-rem call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
-rem call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars64.bat" 
 
 set cmake=cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
-rem set cmake=cmake -T v141
 set build=nmake
-rem set build=cmake --build . --target x64 --config Release
 
 mkdir .build_msvc_avx2_andn_c4_ptr_u4_ss
 cd .build_msvc_avx2_andn_c4_ptr_u4_ss
