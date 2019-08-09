@@ -13,6 +13,38 @@ set cmake=cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release
 set build=make
 set sde=C:\bin\sde-external-8.35.0-2019-03-11-win\sde.exe
 
+mkdir .build_gcc_avx2_andn_c4_ptr_u8_sd
+cd .build_gcc_avx2_andn_c4_ptr_u8_sd
+%cmake% ^
+  -DPCURL_DEBUG=%PCURL_DEBUG% ^
+  -DPTRIT_PLATFORM=PTRIT_AVX2 ^
+  -DPTRIT_CVT=PTRIT_CVT_ANDN ^
+  -DPCURL_S2_CIRCUIT=PCURL_S2_CIRCUIT4 ^
+  -DPCURL_S2_ARGS=PCURL_S2_ARGS_PTR ^
+  -DPCURL_SBOX_UNWIND=PCURL_SBOX_UNWIND_8 ^
+  -DPCURL_STATE=PCURL_STATE_DOUBLE ^
+  ..
+%build%
+pcurl %tx_count4% > pcurl.log
+cd ..
+
+mkdir .build_gcc_avx2_andn_c4_ptr_u2_sd
+cd .build_gcc_avx2_andn_c4_ptr_u2_sd
+%cmake% ^
+  -DPCURL_DEBUG=%PCURL_DEBUG% ^
+  -DPTRIT_PLATFORM=PTRIT_AVX2 ^
+  -DPTRIT_CVT=PTRIT_CVT_ANDN ^
+  -DPCURL_S2_CIRCUIT=PCURL_S2_CIRCUIT4 ^
+  -DPCURL_S2_ARGS=PCURL_S2_ARGS_PTR ^
+  -DPCURL_SBOX_UNWIND=PCURL_SBOX_UNWIND_2 ^
+  -DPCURL_STATE=PCURL_STATE_DOUBLE ^
+  ..
+%build%
+pcurl %tx_count4% > pcurl.log
+cd ..
+
+goto :eof
+
 mkdir .build_gcc_avx512_andn_c4_ptr_u4_ss
 cd .build_gcc_avx512_andn_c4_ptr_u4_ss
 %cmake% --config Release ^
