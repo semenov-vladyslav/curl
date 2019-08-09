@@ -81,8 +81,10 @@ See [bench_arm.sh](bench_arm.sh), [bench_x64_msvc.bat](bench_x64_msvc.bat), and 
 
 # Benchmark results
 
-Time is measured using `clock` function, benchmark results have quite significant variance due to platform specifics (mobile PC, noisy environment).
-Time presented is "average" of several benchmark runs.
+`Time` is measured using `clock` function, benchmark results have quite significant variance due to platform specifics (mobile PC, noisy environment).
+Time presented is "average" of several benchmark runs. `Speed` is measured in transactions per second. Transaction size is 8019 trits, or 33 `rate`s, 
+ie. it takes 33 transforms to hash a transaction. SIMD vectorization factor is to the left in the `Distance` column.
+Curl-81 was used to hash transactions in the benchmarks.
 
 Short config has the following format:
 
@@ -155,53 +157,53 @@ AVX512 implementation was tested with Intel sde-8.35.0.
 
 Environment: ARMv7l, raspbian (4.4.13-v7+), gcc-6.1.0.
 
-*Speedup*: 1.82x.
+*Speedup*: 1.90x.
 
 | Short config                   | Speed, tx/s | Distance, tx | Time, ms |
 | ------------------------------ | ---------- | ------------- | -------- |
-| `gcc_64_andn_c4_ptr_u8_sd`     | 10245 tx/s |  64 x 1000 tx |  6246 ms |
-|                                | 10299 tx/s |  64 x 1000 tx |  6213 ms |
-|                                | 10300 tx/s |  64 x 1000 tx |  6213 ms |
-| `gcc_neon_orn_c4_ptr_u4_ss`    | 10020 tx/s |  128 x 500 tx |  6386 ms |
-|                                | 10090 tx/s |  128 x 500 tx |  6342 ms |
-|                                | 10105 tx/s |  128 x 500 tx |  6332 ms |
-| `gcc_64_andn_c4_ptr_u4_ss`     |  9925 tx/s |  64 x 1000 tx |  6448 ms |
-|                                |  9937 tx/s |  64 x 1000 tx |  6440 ms |
-|                                |  9848 tx/s |  64 x 1000 tx |  6498 ms |
-| `gcc_64_orn_c4_ptr_u4_ss`      |  8167 tx/s |  64 x 1000 tx |  7836 ms |
-|                                |  8156 tx/s |  64 x 1000 tx |  7846 ms |
-|                                |  8144 tx/s |  64 x 1000 tx |  7858 ms |
-| `gcc_neon_orn_c4_ptr_u8_sd`    |  9614 tx/s |  128 x 500 tx |  6656 ms |
-|                                |  9661 tx/s |  128 x 500 tx |  6624 ms |
-|                                |  9664 tx/s |  128 x 500 tx |  6622 ms |
-| `gcc_64_andn_c5_lut_u1_sd`     |  5620 tx/s |  64 x 1000 tx | 11387 ms |
-|                                |  5626 tx/s |  64 x 1000 tx | 11373 ms |
-|                                |  5613 tx/s |  64 x 1000 tx | 11400 ms |
+| `gcc_64_andn_c4_ptr_u8_sd`     |  3494 tx/s |  64 x 1000 tx | 18316 ms |
+|                                |  3492 tx/s |  64 x 1000 tx | 18323 ms |
+|                                |  3487 tx/s |  64 x 1000 tx | 18348 ms |
+| `gcc_64_andn_c4_ptr_u4_ss`     |  3320 tx/s |  64 x 1000 tx | 19273 ms |
+|                                |  3329 tx/s |  64 x 1000 tx | 19219 ms |
+|                                |  3331 tx/s |  64 x 1000 tx | 19210 ms |
+| `gcc_neon_orn_c4_ptr_u4_ss`    |  3303 tx/s |  128 x 500 tx | 19371 ms |
+|                                |  3306 tx/s |  128 x 500 tx | 19355 ms |
+|                                |  3305 tx/s |  128 x 500 tx | 19359 ms |
+| `gcc_neon_orn_c4_ptr_u8_sd`    |  3270 tx/s |  128 x 500 tx | 19571 ms |
+|                                |  3271 tx/s |  128 x 500 tx | 19561 ms |
+|                                |  3271 tx/s |  128 x 500 tx | 19560 ms |
+| `gcc_64_orn_c4_ptr_u4_ss`      |  2738 tx/s |  64 x 1000 tx | 23367 ms |
+|                                |  2723 tx/s |  64 x 1000 tx | 23501 ms |
+|                                |  2732 tx/s |  64 x 1000 tx | 23419 ms |
+| `gcc_64_andn_c5_lut_u1_sd`     |  1832 tx/s |  64 x 1000 tx | 34924 ms |
+|                                |  1832 tx/s |  64 x 1000 tx | 34923 ms |
+|                                |  1832 tx/s |  64 x 1000 tx | 34925 ms |
 
 ## Samsung Grand Prime
 
 Environment: ARMv8, Android 5.1.1, clang-8.0.0.
 
-*Speedup*: 2.34x.
+*Speedup*: 2.37x.
 
 | Short config                   | Speed, tx/s | Distance, tx | Time, ms |
 | ------------------------------ | ---------- | ------------- | -------- |
-| `clang_neon_orn_c4_ptr_u4_ss`  | 10127 tx/s |  128 x 500 tx |  6319 ms |
-|                                | 10115 tx/s |  128 x 500 tx |  6327 ms |
-|                                | 10111 tx/s |  128 x 500 tx |  6329 ms |
-| `clang_neon_orn_c4_ptr_u8_sd`  |  9232 tx/s |  128 x 500 tx |  6932 ms |
-|                                |  9225 tx/s |  128 x 500 tx |  6937 ms |
-|                                |  9249 tx/s |  128 x 500 tx |  6919 ms |
-| `clang_64_andn_c4_ptr_u4_ss`   |  5316 tx/s |  64 x 1000 tx | 12037 ms |
-|                                |  5311 tx/s |  64 x 1000 tx | 12050 ms |
-|                                |  5318 tx/s |  64 x 1000 tx | 12034 ms |
-| `clang_64_orn_c4_ptr_u4_ss`    |  4712 tx/s |  64 x 1000 tx | 13580 ms |
-|                                |  4707 tx/s |  64 x 1000 tx | 13596 ms |
-|                                |  4720 tx/s |  64 x 1000 tx | 13558 ms |
-| `clang_64_andn_c4_ptr_u8_sd`   |  4437 tx/s |  64 x 1000 tx | 14423 ms |
-|                                |  4438 tx/s |  64 x 1000 tx | 14420 ms |
-|                                |  4439 tx/s |  64 x 1000 tx | 14415 ms |
-| `clang_64_andn_c5_lut_u1_sd`   |  4320 tx/s |  64 x 1000 tx | 14812 ms |
-|                                |  4322 tx/s |  64 x 1000 tx | 14805 ms |
-|                                |  4323 tx/s |  64 x 1000 tx | 14802 ms |
+| `clang_neon_orn_c4_ptr_u4_ss`  |  3345 tx/s |  128 x 500 tx | 19132 ms |
+|                                |  3350 tx/s |  128 x 500 tx | 19099 ms |
+|                                |  3350 tx/s |  128 x 500 tx | 19099 ms |
+| `clang_neon_orn_c4_ptr_u8_sd`  |  3086 tx/s |  128 x 500 tx | 20733 ms |
+|                                |  3083 tx/s |  128 x 500 tx | 20757 ms |
+|                                |  3069 tx/s |  128 x 500 tx | 20850 ms |
+| `clang_64_andn_c4_ptr_u4_ss`   |  1791 tx/s |  64 x 1000 tx | 35732 ms |
+|                                |  1791 tx/s |  64 x 1000 tx | 35725 ms |
+|                                |  1790 tx/s |  64 x 1000 tx | 35750 ms |
+| `clang_64_orn_c4_ptr_u4_ss`    |  1561 tx/s |  64 x 1000 tx | 40991 ms |
+|                                |  1560 tx/s |  64 x 1000 tx | 41018 ms |
+|                                |  1561 tx/s |  64 x 1000 tx | 40981 ms |
+| `clang_64_andn_c4_ptr_u8_sd`   |  1490 tx/s |  64 x 1000 tx | 42928 ms |
+|                                |  1491 tx/s |  64 x 1000 tx | 42916 ms |
+|                                |  1490 tx/s |  64 x 1000 tx | 42946 ms |
+| `clang_64_andn_c5_lut_u1_sd`   |  1413 tx/s |  64 x 1000 tx | 45287 ms |
+|                                |  1413 tx/s |  64 x 1000 tx | 45274 ms |
+|                                |  1413 tx/s |  64 x 1000 tx | 45281 ms |
 
