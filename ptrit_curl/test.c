@@ -256,7 +256,7 @@ void bench_hash(size_t n)
   pcurl_t c;
 
   memset(tx, -1, sizeof(tx));
-  pcurl_init(&c, 27);
+  pcurl_init(&c, 81);
   
   size_t i = n;
   clock_t runtime = clock();
