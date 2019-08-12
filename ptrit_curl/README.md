@@ -89,7 +89,7 @@ Time presented is "average" of several benchmark runs. `Speed` is measured in tr
 ie. it takes 33 transforms to hash a transaction. SIMD vectorization factor is to the left in the `Distance` column.
 Curl-81 was used to hash transactions in the benchmarks.
 
-Short config has the following format:
+Short configuration has the following format:
 
 ```
 <compiler>_<platform>_<cvt>_<circuit>_<s2_args>_<unwind>_<state>
@@ -104,6 +104,37 @@ where
 - `<unwind>`: `uX`=`PCURL_SBOX_UNWIND_X`.
 - `<state>`: `ss`=`PCURL_STATE_SHORT`, `sd`=`PCURL_STATE_DOUBLE`.
 
+## Laptop ThinkPad T-490s
+
+Environment: Intel Core i7-8565U, Ubuntu 18.04, gcc-7.4.0.
+
+*Speedup*: 3.75x.
+
+| Configuration                  | Speed, tx/s | Distance, tx | Time, ms |
+| ------------------------------ | ---------: | ------------: | -------: |
+| `gcc_avx2_andn_c4_ptr_u8_sd`   | 95345 tx/s | 256 x 2500 tx |  6712 ms |
+|                                | 91675 tx/s | 256 x 2500 tx |  6981 ms |
+|                                | 88421 tx/s | 256 x 2500 tx |  7238 ms |
+| `gcc_avx2_andn_c4_ptr_u4_ss`   | 89393 tx/s | 256 x 2500 tx |  7159 ms |
+|                                | 88847 tx/s | 256 x 2500 tx |  7203 ms |
+|                                | 90907 tx/s | 256 x 2500 tx |  7040 ms |
+| `gcc_avx2_andn_c4_ptr_u2_sd`   | 82903 tx/s | 256 x 2500 tx |  7719 ms |
+|                                | 84771 tx/s | 256 x 2500 tx |  7549 ms |
+|                                | 83058 tx/s | 256 x 2500 tx |  7705 ms |
+| `gcc_avx2_andn_c4_ptr_u4_sd`   | 88255 tx/s | 256 x 2500 tx |  7251 ms |
+|                                | 85882 tx/s | 256 x 2500 tx |  7452 ms |
+|                                | 83931 tx/s | 256 x 2500 tx |  7625 ms |
+| `gcc_sse2_andn_c4_ptr_u4_ss`   | 70663 tx/s | 128 x 5000 tx |  9057 ms |
+|                                | 71107 tx/s | 128 x 5000 tx |  9000 ms |
+|                                | 72600 tx/s | 128 x 5000 tx |  8815 ms |
+| `gcc_64_andn_c4_ptr_u4_ss`     | 42553 tx/s | 64 x 10000 tx | 15039 ms |
+|                                | 40221 tx/s | 64 x 10000 tx | 15912 ms |
+|                                | 39609 tx/s | 64 x 10000 tx | 16157 ms |
+| `gcc_64_andn_c5_lut_u1_sd`     | 24019 tx/s | 64 x 10000 tx | 26645 ms |
+|                                | 24765 tx/s | 64 x 10000 tx | 25842 ms |
+|                                | 24478 tx/s | 64 x 10000 tx | 26145 ms |
+
+
 ## Laptop HP ProBook
 
 Environment: Intel Core i7 4510U, Windows 8.1, msvc-14.1, gcc-8.0.1.
@@ -111,7 +142,7 @@ AVX512 implementation was tested with Intel sde-8.35.0.
 
 *Speedup*: 2.71x.
 
-| Short config                   | Speed, tx/s | Distance, tx | Time, ms |
+| Configuration                  | Speed, tx/s | Distance, tx | Time, ms |
 | ------------------------------ | ---------: | ------------: | -------: |
 | `gcc_avx512_andn_c4_ptr_u4_ss` |   575 tx/s |   512 x 10 tx |  8897 ms |
 |                                |   579 tx/s |   512 x 10 tx |  8836 ms |
@@ -162,7 +193,7 @@ Environment: ARMv7l, raspbian (4.4.13-v7+), gcc-6.1.0.
 
 *Speedup*: 1.90x.
 
-| Short config                   | Speed, tx/s | Distance, tx | Time, ms |
+| Configuration                  | Speed, tx/s | Distance, tx | Time, ms |
 | ------------------------------ | ---------- | ------------- | -------- |
 | `gcc_64_andn_c4_ptr_u8_sd`     |  3494 tx/s |  64 x 1000 tx | 18316 ms |
 |                                |  3492 tx/s |  64 x 1000 tx | 18323 ms |
@@ -189,7 +220,7 @@ Environment: ARMv8, Android 5.1.1, clang-8.0.0.
 
 *Speedup*: 2.37x.
 
-| Short config                   | Speed, tx/s | Distance, tx | Time, ms |
+| Configuration                  | Speed, tx/s | Distance, tx | Time, ms |
 | ------------------------------ | ---------- | ------------- | -------- |
 | `clang_neon_orn_c4_ptr_u4_ss`  |  3345 tx/s |  128 x 500 tx | 19132 ms |
 |                                |  3350 tx/s |  128 x 500 tx | 19099 ms |
