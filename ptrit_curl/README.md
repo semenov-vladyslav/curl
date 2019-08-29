@@ -104,6 +104,36 @@ where
 - `<unwind>`: `uX`=`PCURL_SBOX_UNWIND_X`.
 - `<state>`: `ss`=`PCURL_STATE_SHORT`, `sd`=`PCURL_STATE_DOUBLE`.
 
+## MacBook Pro
+
+Environment: 2,6 GHz Intel Core i7, 2400 MHz DDR4, Darwin 18.7.0, Apple LLVM 10.0.1.
+
+*Speedup*: 3.56x.
+
+| Configuration                  | Speed, tx/s | Distance, tx  | Time, ms |
+| ------------------------------ | ----------: | ------------: | -------: |
+| `gcc_avx2_andn_c4_ptr_u8_sd`   | 108598 tx/s | 256 x 2500 tx |  5893 ms |
+|                                | 108864 tx/s | 256 x 2500 tx |  5878 ms |
+|                                | 109836 tx/s | 256 x 2500 tx |  5826 ms |
+| `gcc_avx2_andn_c4_ptr_u4_ss`   | 107704 tx/s | 256 x 2500 tx |  5942 ms |
+|                                | 107957 tx/s | 256 x 2500 tx |  5928 ms |
+|                                | 107222 tx/s | 256 x 2500 tx |  5968 ms |
+| `gcc_avx2_andn_c4_ptr_u4_sd`   | 105338 tx/s | 256 x 2500 tx |  6075 ms |
+|                                | 106084 tx/s | 256 x 2500 tx |  6032 ms |
+|                                | 106209 tx/s | 256 x 2500 tx |  6025 ms |
+| `gcc_avx2_andn_c4_ptr_u2_sd`   | 102943 tx/s | 256 x 2500 tx |  6217 ms |
+|                                | 102129 tx/s | 256 x 2500 tx |  6266 ms |
+|                                | 102387 tx/s | 256 x 2500 tx |  6250 ms |
+| `gcc_sse2_andn_c4_ptr_u4_ss`   |  74331 tx/s | 128 x 5000 tx |  8610 ms |
+|                                |  74476 tx/s | 128 x 5000 tx |  8593 ms |
+|                                |  75133 tx/s | 128 x 5000 tx |  8518 ms |
+| `gcc_64_andn_c4_ptr_u4_ss`     |  37366 tx/s | 64 x 10000 tx | 17127 ms |
+|                                |  37691 tx/s | 64 x 10000 tx | 16980 ms |
+|                                |  37681 tx/s | 64 x 10000 tx | 16984 ms |
+| `gcc_64_andn_c5_lut_u1_sd`     |  30482 tx/s | 64 x 10000 tx | 20995 ms |
+|                                |  30497 tx/s | 64 x 10000 tx | 20985 ms |
+|                                |  29735 tx/s | 64 x 10000 tx | 21523 ms |
+
 ## Laptop ThinkPad T-490s
 
 Environment: Intel Core i7-8565U, Ubuntu 18.04, gcc-7.4.0.
